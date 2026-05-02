@@ -1,0 +1,125 @@
+:root {
+  /* Aura Tactical Color Palette (Premium & Vibrant) */
+  --aura-bg: #030712;
+  --aura-bg-alt: #0f172a;
+  --aura-primary: #00e5ff;
+  --aura-primary-glow: rgba(0, 229, 255, 0.3);
+  --aura-secondary: #a855f7;
+  --aura-accent: #f43f5e;
+  --aura-success: #10b981;
+  --aura-warning: #f59e0b;
+  
+  /* Tactical Surface (Glassmorphism) */
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+  
+  /* Typography */
+  --font-main: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  font-family: var(--font-main);
+  line-height: 1.5;
+  font-weight: 400;
+  color: #f1f5f9;
+  background-color: var(--aura-bg);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body, html, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--aura-bg);
+}
+
+/* Glassmorphism Utility */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow);
+}
+
+/* Premium Typography */
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+/* Scrollbar Style */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* React Flow Custom Styles */
+.react-flow__background {
+  background-color: var(--aura-bg);
+}
+
+.react-flow__edge-path {
+  stroke: var(--aura-primary);
+  stroke-width: 2.5;
+  stroke-opacity: 0.8;
+  filter: drop-shadow(0 0 5px var(--aura-primary-glow));
+  stroke-dasharray: 10;
+  animation: aura-flow 20s linear infinite;
+}
+
+@keyframes aura-flow {
+  from {
+    stroke-dashoffset: 200;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #ffffff !important; /* 선택 시 더 밝게 */
+  stroke-width: 5 !important;
+  filter: drop-shadow(0 0 15px var(--aura-primary)) !important;
+  stroke-dasharray: 10;
+  animation: aura-flow 10s linear infinite, aura-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes aura-pulse {
+  0% { stroke-opacity: 0.6; }
+  50% { stroke-opacity: 1; }
+  100% { stroke-opacity: 0.6; }
+}
+
+.react-flow__edge-interaction {
+  stroke-width: 20;
+}
+
+.react-flow__connection-path {
+  stroke: var(--aura-secondary);
+  stroke-width: 2;
+  stroke-dasharray: 5;
+}
+
+.react-flow__node {
+  border-radius: 12px;
+  border: none;
+  background: none;
+}
