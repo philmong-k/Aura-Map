@@ -3,12 +3,11 @@ name: Aura-Map Tactical Deploy
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-and-deploy:
+    # 지휘관님의 로컬 PC 러너를 사용합니다.
+    runs-on: self-hosted
 
     steps:
     - name: 전술 코드 체크아웃
@@ -26,4 +25,10 @@ jobs:
     - name: 전술 엔진 빌드 (Build)
       run: npm run build
 
-    # 향후 배포 단계(GitHub Pages 등)를 여기에 추가할 수 있습니다.
+    - name: WSL2 영토로 배포 (Deploy to Nginx)
+      shell: pwsh
+      run: |
+        # 빌드된 dist 폴더를 WSL2 내부의 Nginx 웹 루트로 복사
+        wsl -d Ubuntu rm -rf /var/www/aura-map/*
+        wsl -d Ubuntu cp -r ./dist/* /var/www/aura-map/
+        echo "✅ Aura-Map이 dev.philmong.co.kr/canvas/ 경로로 배포되었습니다."

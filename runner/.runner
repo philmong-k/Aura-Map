@@ -1,0 +1,9 @@
+﻿{
+  "agentId": 2,
+  "agentName": "Aura-Runner-01",
+  "poolId": 1,
+  "poolName": "Default",
+  "serverUrl": "https://pipelinesghubeus21.actions.githubusercontent.com/lpcUy9XL6Bt9mdmYIXOAoZVGf2KSEQF6Tr1HUN1o4dUDu0rUN0/",
+  "gitHubUrl": "https://github.com/philmong-k/Aura-Map",
+  "workFolder": "_work"
+}

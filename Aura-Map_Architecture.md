@@ -19,10 +19,20 @@
 - **자동 정렬 (Dagre)**: 논리적 흐름에 따라 노드들을 계층 구조로 자동 재배치.
 - **스마트 스냅 (Snap Lines)**: 드래그 시 수평/수직 정렬 가이드 라인 제공.
 
-### 2.4 전술 아카이브 시스템 (Tactical Archive) [NEW v4.5]
+### 2.4 전술 아카이브 시스템 (Tactical Archive) [v4.5 PLATINUM]
 - **멀티 프로젝트 스토리지**: 단일 저장소 구조에서 ID 기반의 다중 프로젝트 관리 구조로 진화.
 - **작전 도서관 (Library)**: 사이드바를 통한 프로젝트 목록 조회, 로딩, 삭제 및 이름 변경 기능.
 - **데이터 무결성**: 프로젝트 메타데이터(이름, 수정일)와 실제 캔버스 데이터를 분리하여 관리.
+
+### 2.5 전용 인프라 상세 (Dedicated Infrastructure) [NEW]
+- **GitHub Self-hosted Runner**: 
+    - **배치 경로**: `C:\Users\slo76\My_projects\Aura-Map\runner`
+    - **설정 명칭**: `Aura-Runner-01` (Unattended Mode)
+    - **배치 사유**: 
+        - **하드웨어 가속**: Intel Core Ultra 7(NPU) 자원을 활용한 고속 빌드 및 향후 AI 분석 엔진 구동 최적화.
+        - **백엔드 통신**: 동일 호스트 내 `Quark-Core` 백엔드와의 물리적 근접성을 통한 실시간 동기화 효율 극대화.
+- **CI/CD 워크플로우**: `.github/workflows/deploy.yml`을 통한 자동 빌드 및 검증 시스템 구축.
+
 
 ## 3. 데이터 및 영속성 (Persistence)
 - **LocalStorage**: `aura-map-project-list` 및 `aura-map-tactical-data-<id>` 키를 사용한 체계적 저장.

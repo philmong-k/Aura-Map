@@ -1,0 +1,14 @@
+[2026-05-03  7:14:34.53] --------whoami-------- 
+win-6ejq1esv79l\slo76
+[2026-05-03  7:14:34.56] --------whoami-------- 
+[2026-05-03  7:14:34.57] Waiting for Runner.Listener.exe (35324) to complete 
+Runner.Listener.exe          35324 Console                    1     72,564 K
+[2026-05-03  7:14:34.99] Process 35324 still running, check again after 1 second. 
+[2026-05-03  7:14:36.41] Process 35324 finished running 
+[2026-05-03  7:14:36.41] Sleep 1 more second to make sure process exited 
+[2026-05-03  7:14:37.46] Re-organize folders 
+[2026-05-03  7:14:37.52] move "C:\Users\slo76\My_projects\Aura-Map\runner\bin" "C:\Users\slo76\My_projects\Aura-Map\runner\bin.2.316.1" 
+액세스가 거부되었습니다.
+        0개의 디렉터리를 이동했습니다.
+[2026-05-03  7:14:37.52] Can't move "C:\Users\slo76\My_projects\Aura-Map\runner\bin" to "C:\Users\slo76\My_projects\Aura-Map\runner\bin.2.316.1" 
+[2026-05-03  7:14:37.54] Rename "C:\Users\slo76\My_projects\Aura-Map\runner\_diag\SelfUpdate-20260502-221434.log" to be "C:\Users\slo76\My_projects\Aura-Map\runner\_diag\SelfUpdate-20260502-221434.log.failed" 

@@ -38,7 +38,7 @@ const useStore = create((set, get) => ({
   
   // 데이터 영구 보존 명령 (현재 활성화된 프로젝트)
   saveToStorage: () => {
-    const { nodes, edges, currentProjectId, currentProjectName } = get();
+    const { nodes, edges, currentProjectId, currentProjectName, syncToBackend } = get();
     localStorage.setItem(`${STORAGE_KEY}-${currentProjectId}`, JSON.stringify({ nodes, edges }));
     localStorage.setItem('aura-map-last-project-id', currentProjectId);
     
@@ -53,6 +53,38 @@ const useStore = create((set, get) => ({
     }
     localStorage.setItem(LIST_KEY, JSON.stringify(list));
     set({ projectList: list });
+
+    // 백엔드 동기화 (비동기)
+    syncToBackend();
+  },
+
+  // 백엔드 실시간 동기화 브릿지
+  syncToBackend: async () => {
+    const { nodes, edges, currentProjectId, currentProjectName } = get();
+    const BACKEND_URL = import.meta.env.VITE_QUARK_CORE_URL;
+    
+    if (!BACKEND_URL) return;
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tactical/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_TACTICAL_API_KEY}`
+        },
+        body: JSON.stringify({
+          projectId: currentProjectId,
+          projectName: currentProjectName,
+          data: { nodes, edges },
+          timestamp: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) throw new Error('백엔드 응답 오류');
+      console.log('✅ 전술 데이터 백엔드 동기화 완료');
+    } catch (error) {
+      console.warn('⚠️ 백엔드 연결 불가 (로컬 저장소만 사용 중):', error.message);
+    }
   },
 
   // 새 작전 생성
