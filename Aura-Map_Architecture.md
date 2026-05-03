@@ -31,6 +31,9 @@
     - **배치 사유**: 
         - **하드웨어 가속**: Intel Core Ultra 7(NPU) 자원을 활용한 고속 빌드 및 향후 AI 분석 엔진 구동 최적화.
         - **백엔드 통신**: 동일 호스트 내 `Quark-Core` 백엔드와의 물리적 근접성을 통한 실시간 동기화 효율 극대화.
+- **배포 영토 (Deployment Target)**:
+    - **경로**: WSL2 Ubuntu 내 `~/aura-map` (권한 최적화된 사용자 홈 디렉토리 활용).
+    - **라우팅**: Nginx를 통해 `dev.philmong.co.kr/canvas/` 정적 배포본으로 서비스.
 - **CI/CD 워크플로우**: `.github/workflows/deploy.yml`을 통한 자동 빌드 및 검증 시스템 구축.
 
 
