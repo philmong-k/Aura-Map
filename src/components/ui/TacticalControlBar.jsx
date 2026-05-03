@@ -5,8 +5,8 @@ import useStore from '../../store/useStore';
 import './UIControls.css';
 
 const TacticalControlBar = ({ isToolboxOpen }) => {
-  const { getNodes, getEdges, addNode, createGroup, autoLayout, deleteSelection, clearAll, loadFromData, nodes, edges } = useStore();
-  const { screenToFlowPosition, setCenter } = useReactFlow();
+  const { addNode, createGroup, autoLayout, deleteSelection, clearAll, loadFromData, nodes, edges } = useStore();
+  const { screenToFlowPosition, setCenter, getNodes, getEdges } = useReactFlow();
   const fileInputRef = useRef(null);
 
   const handleAddNodeAtCenter = () => {
