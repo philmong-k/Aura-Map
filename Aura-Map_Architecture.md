@@ -24,17 +24,24 @@
 - **작전 도서관 (Library)**: 사이드바를 통한 프로젝트 목록 조회, 로딩, 삭제 및 이름 변경 기능.
 - **데이터 무결성**: 프로젝트 메타데이터(이름, 수정일)와 실제 캔버스 데이터를 분리하여 관리.
 
-### 2.5 전용 인프라 상세 (Dedicated Infrastructure) [NEW]
-- **GitHub Self-hosted Runner**: 
+### 2.5 반응형 UI 모듈화 아키텍처 (Responsive UI) [NEW]
+- **컴포넌트 분리**: 비대한 `App.jsx`를 순수 캔버스 렌더러로 최적화하고, 네비게이션(`TopNavigationBar`), 통제 바(`TacticalControlBar`), 사이드바(`ProjectLibrarySidebar`)로 UI를 완벽하게 모듈화.
+- **스마트 서랍 (Smart Drawer)**: 모바일 환경에서 캔버스 시야를 극대화하기 위해, 상단 바의 렌치(🔧) 아이콘으로 하단 툴바를 스르륵 여닫는 서랍형 상호작용 구현.
+- **CSS Media Query 중심 제어**: JS 조건문 대신 순수 CSS 미디어 쿼리(`UIControls.css`)를 사용하여 PC와 모바일 렌더링 경계를 물리적으로 분리.
+
+### 2.6 전용 인프라 상세 (Dedicated Infrastructure) [NEW]
+- **GitHub 연동 및 소스 제어**:
+    - **저장소**: `https://github.com/philmong-k/Aura-Map.git`
+    - 변경 사항은 표준 Git(`add`, `commit`, `push`)을 통해 메인 리포지토리로 직접 백업 및 관리.
+- **GitHub Self-hosted Runner (향후 활용)**: 
     - **배치 경로**: `C:\Users\slo76\My_projects\Aura-Map\runner`
     - **설정 명칭**: `Aura-Runner-01` (Unattended Mode)
     - **배치 사유**: 
         - **하드웨어 가속**: Intel Core Ultra 7(NPU) 자원을 활용한 고속 빌드 및 향후 AI 분석 엔진 구동 최적화.
-        - **백엔드 통신**: 동일 호스트 내 `Quark-Core` 백엔드와의 물리적 근접성을 통한 실시간 동기화 효율 극대화.
+        - **CI/CD 파이프라인**: GitHub에 Push 시 자동 빌드 및 로컬/원격 배포 파이프라인을 구축할 예정.
 - **배포 영토 (Deployment Target)**:
     - **경로**: WSL2 Ubuntu 내 `~/aura-map` (권한 최적화된 사용자 홈 디렉토리 활용).
-    - **라우팅**: Nginx를 통해 `dev.philmong.co.kr/canvas/` 정적 배포본으로 서비스.
-- **CI/CD 워크플로우**: `.github/workflows/deploy.yml`을 통한 자동 빌드 및 검증 시스템 구축.
+    - **라우팅**: Nginx를 통해 원격 실서버(`philmong.co.kr/canvas2/`) 정적 배포본으로 자동화 스크립트 배포.
 
 
 ## 3. 데이터 및 영속성 (Persistence)
