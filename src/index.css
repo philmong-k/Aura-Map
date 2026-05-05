@@ -1,21 +1,21 @@
 :root {
-  /* Aura Tactical Color Palette (Premium & Vibrant) */
-  --aura-bg: #030712;
-  --aura-bg-alt: #0f172a;
+  /* Agent Canvas Stable Color Palette (Clean & Professional) */
+  --aura-bg: #0f172a; /* 더 차분한 슬레이트 톤 */
+  --aura-bg-alt: #1e293b;
   --aura-primary: #00e5ff;
-  --aura-primary-glow: rgba(0, 229, 255, 0.3);
-  --aura-secondary: #a855f7;
+  --aura-primary-glow: rgba(0, 229, 255, 0.2);
+  --aura-secondary: #8b5cf6;
   --aura-accent: #f43f5e;
   --aura-success: #10b981;
   --aura-warning: #f59e0b;
   
-  /* Tactical Surface (Glassmorphism) */
-  --glass-bg: rgba(15, 23, 42, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+  /* Surface (Glassmorphism) */
+  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
   
   /* Typography */
-  --font-main: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-main: 'Outfit', 'Pretendard', 'Inter', -apple-system, sans-serif;
   
   font-family: var(--font-main);
   line-height: 1.5;
@@ -78,11 +78,8 @@ h1, h2, h3 {
 
 .react-flow__edge-path {
   stroke: var(--aura-primary);
-  stroke-width: 2.5;
-  stroke-opacity: 0.8;
-  filter: drop-shadow(0 0 5px var(--aura-primary-glow));
-  stroke-dasharray: 10;
-  animation: aura-flow 20s linear infinite;
+  stroke-width: 2;
+  stroke-opacity: 0.6;
 }
 
 @keyframes aura-flow {

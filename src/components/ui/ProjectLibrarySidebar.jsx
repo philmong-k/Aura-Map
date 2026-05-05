@@ -1,15 +1,46 @@
-import React from 'react';
-import { Library, X, FilePlus, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Library, X, FilePlus, Trash2, Pencil, Cloud, CloudOff, RotateCw, Lock, LockKeyholeOpen, Layers } from 'lucide-react';
 import useStore from '../../store/useStore';
+import TacticalTemplateManager from './TacticalTemplateManager';
 
 const ProjectLibrarySidebar = ({ showLibrary, setShowLibrary }) => {
-  const { projectList, currentProjectId, createNewProject, loadProject, deleteProject } = useStore();
+  const projectList = useStore((state) => state.projectList);
+  const currentProjectId = useStore((state) => state.currentProjectId);
+  const createNewProject = useStore((state) => state.createNewProject);
+  const loadProject = useStore((state) => state.loadProject);
+  const deleteProject = useStore((state) => state.deleteProject);
+  const renameProject = useStore((state) => state.renameProject);
+  const loadFromBackend = useStore((state) => state.loadFromBackend);
+  const toggleProjectLock = useStore((state) => state.toggleProjectLock);
+  const isBackendLinked = !!import.meta.env.VITE_QUARK_CORE_URL;
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
 
   if (!showLibrary) return null;
 
+  const handleRefresh = async (e) => {
+    e.stopPropagation();
+    setIsRefreshing(true);
+    await loadFromBackend();
+    setTimeout(() => setIsRefreshing(false), 800); // 심미적 회전 효과
+  };
+
   const handleCreateNew = () => {
-    const name = prompt('새 작전 계획의 이름을 입력하세요:', '신규 작전-' + new Date().toLocaleDateString());
+    const now = new Date();
+    const dateStr = now.toLocaleDateString();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    const defaultName = `신규 프로젝트-${dateStr} (${timeStr})`;
+    
+    const name = prompt('새 프로젝트의 이름을 입력하세요:', defaultName);
     if (name) createNewProject(name);
+  };
+
+  const handleRename = (e, id, currentName) => {
+    e.stopPropagation();
+    const newName = prompt('작전 계획의 새로운 이름을 입력하세요:', currentName);
+    if (newName && newName !== currentName) {
+      renameProject(id, newName);
+    }
   };
 
   return (
@@ -31,11 +62,40 @@ const ProjectLibrarySidebar = ({ showLibrary, setShowLibrary }) => {
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Library size={22} color="#00e5ff" /> 전술 아카이브
+          <Library size={22} color="#00e5ff" /> 작전 저장소
         </h3>
-        <button onClick={() => setShowLibrary(false)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
-          <X size={22} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {isBackendLinked && (
+            <button 
+              onClick={handleRefresh}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: isRefreshing ? '#00e5ff' : '#94a3b8', 
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                transition: 'all 0.5s ease',
+                transform: isRefreshing ? 'rotate(360deg)' : 'rotate(0deg)'
+              }}
+              title="서버에서 정보 가져오기"
+            >
+              <RotateCw size={18} />
+            </button>
+          )}
+          {isBackendLinked ? (
+            <div title="백엔드 동기화 가동 중" style={{ color: '#10b981', display: 'flex', alignItems: 'center' }}>
+              <Cloud size={18} />
+            </div>
+          ) : (
+            <div title="로컬 전용 모드 (동기화 비활성)" style={{ color: '#f43f5e', display: 'flex', alignItems: 'center' }}>
+              <CloudOff size={18} />
+            </div>
+          )}
+          <button onClick={() => setShowLibrary(false)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+            <X size={22} />
+          </button>
+        </div>
       </div>
 
       <button 
@@ -56,7 +116,14 @@ const ProjectLibrarySidebar = ({ showLibrary, setShowLibrary }) => {
           marginTop: '10px'
         }}
       >
-        <FilePlus size={18} /> 새 작전 수립
+        <FilePlus size={18} /> 새 프로젝트 생성
+      </button>
+
+      <button 
+        onClick={() => setIsTemplateManagerOpen(true)}
+        style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(0, 229, 255, 0.1)', color: '#00e5ff', border: '1px solid rgba(0, 229, 255, 0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '700' }}
+      >
+        <Layers size={18} /> 전술 데이터 템플릿 관리
       </button>
 
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
@@ -78,15 +145,49 @@ const ProjectLibrarySidebar = ({ showLibrary, setShowLibrary }) => {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <span style={{ color: proj.id === currentProjectId ? '#00e5ff' : '#e2e8f0', fontWeight: '700', fontSize: '14px' }}>
-                {proj.name}
-              </span>
-              <button 
-                onClick={(e) => { e.stopPropagation(); if(confirm('이 작전 계획을 영구 삭제하시겠습니까?')) deleteProject(proj.id); }}
-                style={{ background: 'transparent', border: 'none', color: '#f43f5e', cursor: 'pointer', padding: '0' }}
-              >
-                <Trash2 size={16} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, overflow: 'hidden' }}>
+                <span style={{ 
+                  color: proj.id === currentProjectId ? '#00e5ff' : '#e2e8f0', 
+                  fontWeight: '700', 
+                  fontSize: '14px',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  {proj.name}
+                </span>
+                {proj.isLocked ? (
+                  <span title="잠긴 작전" style={{ color: '#fbbf24', display: 'flex', alignItems: 'center' }}>
+                    <Lock size={12} style={{ marginRight: '4px' }} />
+                  </span>
+                ) : (
+                  <button 
+                    onClick={(e) => handleRename(e, proj.id, proj.name)}
+                    style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px' }}
+                    title="이름 변경"
+                  >
+                    <Pencil size={12} />
+                  </button>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); toggleProjectLock(proj.id); }}
+                  style={{ background: 'transparent', border: 'none', color: proj.isLocked ? '#fbbf24' : '#64748b', cursor: 'pointer', padding: '0' }}
+                  title={proj.isLocked ? "잠금 해제" : "작전 잠금"}
+                >
+                  {proj.isLocked ? <Lock size={16} /> : <LockKeyholeOpen size={16} />} 
+                </button>
+                {!proj.isLocked && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); if(confirm('이 작전 계획을 영구 삭제하시겠습니까?')) deleteProject(proj.id); }}
+                    style={{ background: 'transparent', border: 'none', color: '#f43f5e', cursor: 'pointer', padding: '0' }}
+                    title="작전 삭제"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
             </div>
             <span style={{ color: '#64748b', fontSize: '10px' }}>
               최종 수정: {new Date(proj.lastModified).toLocaleString()}
@@ -94,6 +195,7 @@ const ProjectLibrarySidebar = ({ showLibrary, setShowLibrary }) => {
           </div>
         ))}
       </div>
+      <TacticalTemplateManager isOpen={isTemplateManagerOpen} onClose={() => setIsTemplateManagerOpen(false)} />
     </div>
   );
 };

@@ -6,10 +6,51 @@ import useStore from '../store/useStore';
 const AuraGroup = ({ id, data, selected }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [label, setLabel] = useState(data.label || 'TACTICAL SECTOR');
-  const { updateNodeLabel, toggleGroupCollapse, ungroup, updateNodeMemo } = useStore();
+  const updateNodeLabel = useStore((state) => state.updateNodeLabel);
+  const toggleGroupCollapse = useStore((state) => state.toggleGroupCollapse);
+  const ungroup = useStore((state) => state.ungroup);
+  const updateNodeMemo = useStore((state) => state.updateNodeMemo);
+  const nodes = useStore((state) => state.nodes);
 
   const isCollapsed = data.collapsed;
   const memo = data.memo || '';
+
+  // 📊 하위 노드들의 시트 데이터 합산 계산 (지능형 집계 - 수식 대응)
+  const groupTotal = React.useMemo(() => {
+    const childNodes = nodes.filter(n => n.parentId === id);
+    
+    return childNodes.reduce((acc, node) => {
+      const sheet = node.data.sheet;
+      if (!sheet || !sheet.rows || !sheet.columns) return acc;
+      
+      const columns = sheet.columns;
+      const rows = sheet.rows;
+
+      const evalFormula = (formula, row) => {
+        if (!formula) return 0;
+        try {
+          let expr = formula;
+          columns.forEach(c => {
+            const v = parseFloat(row[c.id]) || 0;
+            const r = new RegExp(`\\b${c.id}\\b`, 'g');
+            expr = expr.replace(r, v);
+          });
+          // eslint-disable-next-line no-new-func
+          return Function(`"use strict"; return (${expr})`)() || 0;
+        } catch { return 0; }
+      };
+
+      const nodeSum = rows.reduce((rAcc, row) => {
+        return rAcc + columns.reduce((cAcc, col) => {
+          if (col.type === 'number') return cAcc + (parseFloat(row[col.id]) || 0);
+          if (col.type === 'formula') return cAcc + evalFormula(col.formula, row);
+          return cAcc;
+        }, 0);
+      }, 0);
+
+      return acc + nodeSum;
+    }, 0);
+  }, [nodes, id]);
 
   const onLabelChange = (evt) => setLabel(evt.target.value);
   const onLabelBlur = () => {
@@ -104,6 +145,26 @@ const AuraGroup = ({ id, data, selected }) => {
           }}>
             {data.label || 'TACTICAL SECTOR'}
           </span>
+        )}
+
+        {/* 📊 그룹 전체 데이터 합산 배지 (글로벌 현황판) */}
+        {groupTotal > 0 && (
+          <div style={{
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            color: '#fff',
+            fontSize: '10px',
+            fontWeight: '900',
+            padding: '2px 8px',
+            borderRadius: '6px',
+            border: '1px solid rgba(16, 185, 129, 0.5)',
+            boxShadow: '0 0 10px rgba(16, 185, 129, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
+          }}>
+            <span style={{ opacity: 0.8 }}>GLOBAL</span>
+            <span>{groupTotal.toLocaleString()}</span>
+          </div>
         )}
 
         <div style={{ display: 'flex', gap: '4px' }}>
