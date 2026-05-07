@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Home, Library, Wrench } from 'lucide-react';
+import { Home, Library, Wrench, HelpCircle } from 'lucide-react';
 import useStore from '../../store/useStore';
 import './UIControls.css';
 
-const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToolboxOpen }) => {
+const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToolboxOpen, isLegendOpen, setIsLegendOpen }) => {
   const currentProjectId = useStore((state) => state.currentProjectId);
   const currentProjectName = useStore((state) => state.currentProjectName);
   const renameProject = useStore((state) => state.renameProject);
@@ -94,6 +94,28 @@ const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToo
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <button 
+          onClick={() => setIsLegendOpen(!isLegendOpen)}
+          style={{ 
+            background: 'transparent', 
+            border: 'none', 
+            color: isLegendOpen ? '#00e5ff' : '#94a3b8', 
+            cursor: 'pointer', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '6px',
+            padding: '4px 8px',
+            borderRadius: '8px',
+            background: isLegendOpen ? 'rgba(0, 229, 255, 0.1)' : 'transparent'
+          }}
+          title="전술 가이드"
+        >
+          <HelpCircle size={18} />
+          {window.innerWidth > 1024 && <span style={{ fontSize: '12px', fontWeight: '800' }}>가이드</span>}
+        </button>
+
+        <div className="divider" style={{ height: '15px' }}></div>
+
         <button 
           onClick={() => setShowLibrary(!showLibrary)}
           style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}

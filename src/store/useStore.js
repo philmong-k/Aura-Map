@@ -46,8 +46,19 @@ const useStore = create((set, get) => ({
   
   // 편집 편의 기능 상태
   multiSelectMode: false,
+  isLegendOpen: false, // 범례 상태 추가
   copiedNodes: [], // 복사된 노드 데이터 (클립보드)
   copiedEdges: [], // 복사된 에지 데이터
+
+  setIsLegendOpen: (isOpen) => set({ isLegendOpen: isOpen }), // 범례 액션 추가
+
+  toggleNodeSelection: (nodeId) => {
+    set((state) => ({
+      nodes: state.nodes.map((node) => 
+        node.id === nodeId ? { ...node, selected: !node.selected } : node
+      )
+    }));
+  },
 
   // 현재 상태 스냅샷 기록 (과거로 저장)
   takeSnapshot: () => {

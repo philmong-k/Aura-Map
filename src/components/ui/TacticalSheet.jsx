@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Trash2, Settings, Type, Hash, Calendar, X, Check, Calculator } from 'lucide-react';
+import { Plus, Trash2, Settings, Type, Hash, Calendar, X, Check, Calculator, ChevronLeft, ChevronRight, List } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { evaluateFormula, offsetDate, getToday, formatValue } from '../../utils/tacticalEngine';
 
@@ -7,6 +7,7 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
   const nodes = useStore((state) => state.nodes);
   const updateNodeSheet = useStore((state) => state.updateNodeSheet);
   const updatePendingRow = useStore((state) => state.updatePendingRow);
+  const tacticalTemplates = useStore((state) => state.tacticalTemplates);
 
   const currentNode = nodes.find(n => n.id === nodeId);
   const data = useMemo(() => currentNode?.data?.sheet || {
@@ -20,10 +21,52 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
   }, [currentNode]);
 
   const [isConfigMode, setIsConfigMode] = useState(false);
-  const [newRow, setNewRow] = useState(currentNode?.data?.pendingRow || {});
+  const getInitialRow = (currentData = data) => {
+    const initial = {};
+    currentData.columns.forEach(col => {
+      if (col.type === 'date') initial[col.id] = getToday();
+    });
+    return initial;
+  };
+
+  const [newRow, setNewRow] = useState(() => {
+    const pending = currentNode?.data?.pendingRow;
+    if (pending && Object.keys(pending).length > 0) return pending;
+    return getInitialRow();
+  });
   const rowRef = useRef(currentNode?.data?.pendingRow || {});
   const [activeFormulaCol, setActiveFormulaCol] = useState(null); 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
+  const firstInputRef = useRef(null); // 첫 번째 입력 필드 조준용 레프
+
+  // 지능형 합계 계산 로직 (TacticalNode와 동일한 타겟팅 로직 적용)
+  const totals = useMemo(() => {
+    const results = { targetId: null };
+    if (!data.rows || data.rows.length === 0) return results;
+
+    const targetColumn = data.columns.find(c => 
+      c.name.includes('소계') || 
+      c.name.includes('합계') || 
+      c.name.toLowerCase().includes('total') || 
+      c.name.toLowerCase().includes('amount') ||
+      c.name.toLowerCase().includes('subtotal')
+    ) || data.columns.filter(c => c.type === 'number' || c.type === 'formula').slice(-1)[0];
+
+    if (targetColumn) results.targetId = targetColumn.id;
+
+    data.columns.forEach(col => {
+      if (col.type === 'number' || col.type === 'formula') {
+        results[col.id] = data.rows.reduce((acc, row) => {
+          let val = 0;
+          if (col.type === 'number') val = parseFloat(row[col.id]) || 0;
+          else if (col.type === 'formula') val = evaluateFormula(col.formula, row, data.columns);
+          return acc + val;
+        }, 0);
+      }
+    });
+
+    return results;
+  }, [data.rows, data.columns]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 1024);
@@ -35,14 +78,40 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
     rowRef.current = newRow;
   }, [newRow]);
 
+  useEffect(() => {
+    // 컬럼 정보를 감시하며 날짜 필드가 비어있을 경우 오늘 날짜로 강제 동기화
+    const initialRow = getInitialRow();
+    const needsUpdate = data.columns.some(col => col.type === 'date' && !newRow[col.id]);
+    
+    if (needsUpdate) {
+      const updated = { ...initialRow, ...newRow };
+      setNewRow(updated);
+      updatePendingRow(nodeId, updated);
+    }
+  }, [data.columns]);
+
   const handleInputChange = (colId, value) => {
     const updatedRow = { ...newRow, [colId]: value };
     setNewRow(updatedRow);
     updatePendingRow(nodeId, updatedRow);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      addRow();
+    }
+  };
+
   const addRow = () => {
-    if (!newRow.c1 && !newRow.c2 && !newRow.c3) return;
+    // 날짜 기본값 외에 실제 데이터(품명, 단가 등)가 입력되었는지 확인
+    const hasActualData = data.columns.some(col => {
+      const val = newRow[col.id];
+      if (col.type === 'date') return false; // 날짜는 기본값이므로 체크 제외
+      return val !== undefined && val !== '' && val !== 0;
+    });
+    
+    if (!hasActualData) return;
+
     const processedNewRow = { ...newRow };
     data.columns.forEach(col => {
       if (col.type === 'number') processedNewRow[col.id] = Number(processedNewRow[col.id] || 0);
@@ -52,14 +121,27 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
       rows: [...(data.rows || []), { ...processedNewRow, id: `row-${Date.now()}` }]
     };
     updateNodeSheet(nodeId, updated);
-    setNewRow({});
-    updatePendingRow(nodeId, {});
+    const initialRow = getInitialRow();
+    setNewRow(initialRow);
+    updatePendingRow(nodeId, initialRow);
+    
+    // 다음 입력을 위해 첫 번째 필드로 포커스 강제 이동
+    setTimeout(() => {
+      if (firstInputRef.current) firstInputRef.current.focus();
+    }, 50);
   };
 
   useEffect(() => {
     return () => {
       const pendingRow = rowRef.current;
-      if (pendingRow && (pendingRow.c1 || pendingRow.c2 || pendingRow.c3)) {
+      // 실제 데이터가 있는 경우에만 자동 저장
+      const hasContent = Object.keys(pendingRow).some(key => {
+        const col = data.columns.find(c => c.id === key);
+        if (col?.type === 'date') return false;
+        return pendingRow[key] !== undefined && pendingRow[key] !== '';
+      });
+
+      if (pendingRow && hasContent) {
         const state = useStore.getState();
         if (!state.nodes || !nodeId) return;
         const node = state.nodes.find(n => n.id === nodeId);
@@ -72,10 +154,20 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
         state.updatePendingRow(nodeId, {});
       }
     };
-  }, [nodeId, data]);
+  }, [nodeId]); // data 의존성 제거: 행 추가 시 중복 저장 방지
 
   const updateColumn = (colId, field, value) => updateNodeSheet(nodeId, { ...data, columns: data.columns.map(c => c.id === colId ? { ...c, [field]: value } : c) });
   const deleteColumn = (colId) => updateNodeSheet(nodeId, { ...data, columns: data.columns.filter(c => c.id !== colId), rows: data.rows.map(row => { const { [colId]: _, ...rest } = row; return rest; }) });
+  
+  const moveColumn = (index, direction) => {
+    const newColumns = [...data.columns];
+    const targetIndex = direction === 'left' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newColumns.length) return;
+    
+    [newColumns[index], newColumns[targetIndex]] = [newColumns[targetIndex], newColumns[index]];
+    updateNodeSheet(nodeId, { ...data, columns: newColumns });
+  };
+
   const updateCell = (rowId, colId, value) => updateNodeSheet(nodeId, { ...data, rows: data.rows.map(row => row.id === rowId ? { ...row, [colId]: value } : row) });
   const deleteRow = (rowId) => updateNodeSheet(nodeId, { ...data, rows: data.rows.filter(r => r.id !== rowId) });
   
@@ -94,6 +186,39 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
     const current = col.formula || '';
     updateColumn(colId, 'formula', current + text);
   };
+
+  // 📅 날짜 화살표 헬퍼
+  const TacticalDateInput = ({ value, onChange, disabled }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '2px', width: '100%' }}>
+      {!disabled && (
+        <button 
+          onClick={() => onChange(offsetDate(value || getToday(), -1))}
+          style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+        >
+          <ChevronLeft size={14} />
+        </button>
+      )}
+      <input 
+        type="date"
+        value={value || ''}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && !disabled && onChange(e.target.value)} // 엔터 지원
+        style={{ 
+          background: 'transparent', border: 'none', color: disabled ? '#fff' : '#00e5ff', width: '100%', outline: 'none',
+          colorScheme: 'dark', fontSize: '12px'
+        }}
+      />
+      {!disabled && (
+        <button 
+          onClick={() => onChange(offsetDate(value || getToday(), 1))}
+          style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+        >
+          <ChevronRight size={14} />
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px', color: '#e2e8f0', position: 'relative' }}>
@@ -122,10 +247,29 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
           <thead style={{ position: 'sticky', top: 0, background: 'rgba(30, 41, 59, 0.95)', zIndex: 10 }}>
             <tr>
-              {data.columns.map(col => (
+              {data.columns.map((col, idx) => (
                 <th key={col.id} style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)', minWidth: '140px' }}>
                   {isConfigMode ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button 
+                            onClick={() => moveColumn(idx, 'left')} 
+                            disabled={idx === 0}
+                            style={{ background: 'transparent', border: 'none', color: idx === 0 ? '#334155' : '#00e5ff', cursor: idx === 0 ? 'default' : 'pointer', padding: '2px' }}
+                          >
+                            <ChevronLeft size={14} />
+                          </button>
+                          <button 
+                            onClick={() => moveColumn(idx, 'right')} 
+                            disabled={idx === data.columns.length - 1}
+                            style={{ background: 'transparent', border: 'none', color: idx === data.columns.length - 1 ? '#334155' : '#00e5ff', cursor: idx === data.columns.length - 1 ? 'default' : 'pointer', padding: '2px' }}
+                          >
+                            <ChevronRight size={14} />
+                          </button>
+                        </div>
+                        <button onClick={() => deleteColumn(col.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={12}/></button>
+                      </div>
                       <input 
                         value={col.name} 
                         onChange={(e) => updateColumn(col.id, 'name', e.target.value)}
@@ -136,8 +280,21 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
                           <option value="text">텍스트</option>
                           <option value="number">숫자</option>
                           <option value="date">날짜</option>
+                          <option value="select">선택 (드롭다운)</option>
                           <option value="formula">수식</option>
                         </select>
+                        {col.type === 'select' && (
+                          <select 
+                            value={col.templateId || ''} 
+                            onChange={(e) => updateColumn(col.id, 'templateId', e.target.value)}
+                            style={{ background: 'rgba(0, 229, 255, 0.1)', border: '1px solid rgba(0, 229, 255, 0.3)', color: '#00e5ff', fontSize: '11px', outline: 'none', borderRadius: '4px', padding: '2px 4px' }}
+                          >
+                            <option value="">템플릿 선택...</option>
+                            {tacticalTemplates.map(t => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                          </select>
+                        )}
                         {col.type === 'formula' && (
                           <button 
                             onClick={() => setActiveFormulaCol(col.id)}
@@ -151,7 +308,7 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
                     </div>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      {col.type === 'number' ? <Hash size={12} /> : col.type === 'date' ? <Calendar size={12} /> : <Type size={12} />}
+                      {col.type === 'number' ? <Hash size={12} /> : col.type === 'date' ? <Calendar size={12} /> : col.type === 'select' ? <List size={12} /> : <Type size={12} />}
                       {col.name}
                     </div>
                   )}
@@ -169,9 +326,27 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
                       <div style={{ color: '#10b981', fontWeight: '700', textAlign: 'right' }}>
                         {formatValue(evaluateFormula(col.formula, row, data.columns))}
                       </div>
+                    ) : col.type === 'date' ? (
+                      <TacticalDateInput 
+                        value={row[col.id]} 
+                        disabled={isLocked} 
+                        onChange={(val) => updateCell(row.id, col.id, val)} 
+                      />
+                    ) : col.type === 'select' ? (
+                      <select
+                        value={row[col.id] || ''}
+                        disabled={isLocked}
+                        onChange={(e) => updateCell(row.id, col.id, e.target.value)}
+                        style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#00e5ff', width: '100%', outline: 'none', borderRadius: '4px', padding: '4px' }}
+                      >
+                        <option value="">선택...</option>
+                        {tacticalTemplates.find(t => t.id === col.templateId)?.options.split(',').map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
                     ) : (
                       <input 
-                        type={col.type === 'date' ? 'date' : 'text'}
+                        type="text"
                         value={row[col.id] || ''}
                         disabled={isLocked}
                         onChange={(e) => updateCell(row.id, col.id, e.target.value)}
@@ -189,17 +364,37 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
             ))}
             {!isLocked && (
               <tr style={{ background: 'rgba(0, 229, 255, 0.05)' }}>
-                {data.columns.map(col => (
+                {data.columns.map((col, index) => (
                   <td key={col.id} style={{ padding: '8px 12px' }}>
                     {col.type === 'formula' ? (
                       <div style={{ color: '#10b981', fontWeight: '700', textAlign: 'right' }}>
                         {formatValue(evaluateFormula(col.formula, newRow, data.columns))}
                       </div>
+                    ) : col.type === 'date' ? (
+                      <TacticalDateInput 
+                        value={newRow[col.id]} 
+                        onChange={(val) => handleInputChange(col.id, val)} 
+                      />
+                    ) : col.type === 'select' ? (
+                      <select
+                        value={newRow[col.id] || ''}
+                        onChange={(e) => handleInputChange(col.id, e.target.value)}
+                        onKeyDown={handleKeyDown} // 엔터 지원
+                        style={{ background: 'rgba(0, 229, 255, 0.1)', border: 'none', color: '#00e5ff', width: '100%', outline: 'none', borderRadius: '4px', padding: '4px' }}
+                      >
+                        <option value="">선택...</option>
+                        {tacticalTemplates.find(t => t.id === col.templateId)?.options.split(',').map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
                     ) : (
                       <input 
+                        ref={index === 0 ? firstInputRef : null} // 첫 번째 필드에 레프 장착
+                        type="text"
                         placeholder={`${col.name}...`}
                         value={newRow[col.id] || ''}
                         onChange={(e) => handleInputChange(col.id, e.target.value)}
+                        onKeyDown={handleKeyDown} // 엔터 지원
                         style={{ background: 'transparent', border: 'none', color: '#00e5ff', width: '100%', outline: 'none' }}
                       />
                     )}
@@ -211,6 +406,36 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
               </tr>
             )}
           </tbody>
+          {data.rows.length > 0 && (
+            <tfoot style={{ position: 'sticky', bottom: 0, background: 'rgba(30, 41, 59, 0.98)', zIndex: 10, borderTop: '2px solid rgba(0, 229, 255, 0.2)', backdropFilter: 'blur(10px)' }}>
+              <tr>
+                {data.columns.map((col, idx) => {
+                  const isTarget = totals.targetId === col.id;
+                  const hasValue = totals[col.id] !== undefined;
+                  return (
+                    <td key={col.id} style={{ padding: '12px', textAlign: 'right' }}>
+                      {idx === 0 && (
+                        <div style={{ float: 'left', display: 'flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '11px', fontWeight: '900' }}>
+                          <Check size={14} color="#00e5ff" /> TOTAL SUMMARY
+                        </div>
+                      )}
+                      {hasValue && (
+                        <div style={{ 
+                          color: isTarget ? '#10b981' : '#94a3b8', 
+                          fontWeight: '900',
+                          fontSize: isTarget ? '15px' : '12px',
+                          textShadow: isTarget ? '0 0 10px rgba(16, 185, 129, 0.3)' : 'none'
+                        }}>
+                          {formatValue(totals[col.id])}
+                        </div>
+                      )}
+                    </td>
+                  );
+                })}
+                <td></td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
 

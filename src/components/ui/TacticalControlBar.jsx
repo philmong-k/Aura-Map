@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Plus, Target, MousePointer2, Users, Download, Upload, Trash2, X, Undo2, Redo2, Copy, Clipboard, MousePointerSquareDashed } from 'lucide-react';
+import { Plus, Target, MousePointer2, Users, Download, Upload, Trash2, X, Undo2, Redo2, Copy, Clipboard, MousePointerSquareDashed, FileText } from 'lucide-react';
 import { Panel, useReactFlow } from '@xyflow/react';
 import useStore from '../../store/useStore';
 import './UIControls.css';
@@ -211,7 +211,7 @@ const TacticalControlBar = ({ isToolboxOpen, onOpenDetail }) => {
           }}
           title="전술 상세 편집"
         >
-          <Plus size={20} style={{ transform: 'rotate(45deg)' }} /> <span className="btn-text">상세 계획</span>
+          <FileText size={20} /> <span className="btn-text">상세 계획</span>
         </button>
         <button 
           onClick={() => autoLayout('TB')}

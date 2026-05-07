@@ -61,6 +61,8 @@ const FlowCanvas = () => {
   const projectList = useStore((state) => state.projectList);
   const createNewProject = useStore((state) => state.createNewProject);
   const multiSelectMode = useStore((state) => state.multiSelectMode);
+  const isLegendOpen = useStore((state) => state.isLegendOpen);
+  const setIsLegendOpen = useStore((state) => state.setIsLegendOpen);
   const setMultiSelectMode = useStore((state) => state.setMultiSelectMode);
   const copySelection = useStore((state) => state.copySelection);
   const pasteSelection = useStore((state) => state.pasteSelection);
@@ -143,9 +145,17 @@ const FlowCanvas = () => {
 
   const currentProject = projectList.find(p => p.id === currentProjectId);
   const isLocked = currentProject?.isLocked;
+  const toggleNodeSelection = useStore((state) => state.toggleNodeSelection);
+
+  const onNodeClick = useCallback((event, node) => {
+    // [전술적 직접 제어] 다중 선택 모드일 때는 라이브러리의 자동 선택을 우회하고 직접 토글함
+    if (multiSelectMode) {
+      toggleNodeSelection(node.id);
+    }
+  }, [multiSelectMode, toggleNodeSelection]);
 
   return (
-    <div ref={reactFlowWrapper} style={{ width: '100vw', height: '100vh', background: '#030712', position: 'relative', overflow: 'hidden' }}>
+    <div ref={reactFlowWrapper} style={{ width: '100vw', height: '100vh', background: '#030712', position: 'relative', overflow: 'hidden', touchAction: 'none' }}>
       
       {/* 1. 상단 네비게이션 바 */}
       <TopNavigationBar 
@@ -153,6 +163,8 @@ const FlowCanvas = () => {
         setShowLibrary={setShowLibrary}
         isToolboxOpen={isToolboxOpen}
         setIsToolboxOpen={setIsToolboxOpen}
+        isLegendOpen={isLegendOpen}
+        setIsLegendOpen={setIsLegendOpen}
       />
 
       {/* 2. 전술 아카이브 (도서관) */}
@@ -196,6 +208,7 @@ const FlowCanvas = () => {
             onEdgesDelete={onEdgesDelete}
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
+            onNodeClick={onNodeClick}
             onNodeDoubleClick={(e, node) => {
               setDetailModal({ isOpen: true, nodeId: node.id });
             }}
@@ -205,12 +218,13 @@ const FlowCanvas = () => {
             nodesDraggable={!isLocked}
             nodesConnectable={!isLocked}
             elementsSelectable={true}
-            nodesSelectable={true}
+            nodesSelectable={!multiSelectMode}
             selectNodesOnDrag={true}
             panOnDrag={!multiSelectMode}
             selectionOnDrag={multiSelectMode}
             selectionMode={SelectionMode.Partial}
-            fitView
+            unselectNodesOnContextMenu={false} 
+            unselectNodesOnDrag={false} 
             snapToGrid
             snapGrid={[15, 15]}
             connectionMode="loose"
@@ -320,7 +334,7 @@ const FlowCanvas = () => {
       )}
 
       {/* 5. 전술 기호 가이드 (범례) */}
-      <TacticalLegend />
+      <TacticalLegend isOpen={isLegendOpen} onClose={() => setIsLegendOpen(false)} />
     </div>
   );
 };

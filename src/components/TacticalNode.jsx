@@ -127,12 +127,22 @@ const TacticalNode = ({ id, data, selected }) => {
           } catch { return 0; }
         };
 
+        // 지능형 타겟 컬럼 선정 (소계, 합계, Total 등 우선, 없으면 마지막 숫자/수식 컬럼)
+        const targetColumn = columns.find(c => 
+          c.name.includes('소계') || 
+          c.name.includes('합계') || 
+          c.name.toLowerCase().includes('total') || 
+          c.name.toLowerCase().includes('amount') ||
+          c.name.toLowerCase().includes('subtotal')
+        ) || columns.filter(c => c.type === 'number' || c.type === 'formula').slice(-1)[0];
+
+        if (!targetColumn) return null;
+
         const total = rows.reduce((acc, row) => {
-          return acc + columns.reduce((rAcc, col) => {
-            if (col.type === 'number') return rAcc + (parseFloat(row[col.id]) || 0);
-            if (col.type === 'formula') return rAcc + evalFormula(col.formula, row);
-            return rAcc;
-          }, 0);
+          let val = 0;
+          if (targetColumn.type === 'number') val = parseFloat(row[targetColumn.id]) || 0;
+          else if (targetColumn.type === 'formula') val = evalFormula(targetColumn.formula, row);
+          return acc + val;
         }, 0);
 
         if (total === 0) return null;

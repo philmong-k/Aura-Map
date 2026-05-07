@@ -25,7 +25,7 @@ const TacticalTemplateManager = ({ isOpen, onClose }) => {
     setEditingId(null);
   };
 
-  if (!isOpen) return null;
+  // 부모(ProjectLibrarySidebar)에서 이미 조건부 렌더링을 제어하므로 내부 체크 불필요
 
   return (
     <div 
