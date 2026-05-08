@@ -1,0 +1,76 @@
+{
+  "projectName": "제국 설계도 V3 - C타입 파이프라인",
+  "nodes": [
+    {
+      "id": "node-1",
+      "type": "tactical",
+      "position": { "x": 100, "y": 250 },
+      "data": { "label": "💻 Local Windows (HQ)", "shape": "terminal", "memo": "지휘관님의 개인 창작 기지. npm run dev를 통해 자유롭게 무기를 연마함." }
+    },
+    {
+      "id": "node-2",
+      "type": "tactical",
+      "position": { "x": 400, "y": 250 },
+      "data": { "label": "🧪 WSL2 Dev (Staging)", "shape": "process", "memo": "1차 검증 기지 (dev.philmong.co.kr). 운영 환경과 똑같은 리눅스 환경에서 성능을 테스트함." }
+    },
+    {
+      "id": "node-3",
+      "type": "tactical",
+      "position": { "x": 700, "y": 250 },
+      "data": { "label": "🌍 Remote Production", "shape": "terminal", "memo": "최종 전장 (philmong.co.kr). 완벽히 검증된 무기만이 이곳에 투사됨." }
+    },
+    {
+      "id": "node-4",
+      "type": "tactical",
+      "position": { "x": 400, "y": 100 },
+      "data": { "label": "📦 Git & JSON Archive", "shape": "data", "memo": "데이터 금고. 중요한 전술 템플릿을 JSON 스냅샷으로 추출하여 영구 보존함." }
+    },
+    {
+      "id": "node-5",
+      "type": "tactical",
+      "position": { "x": 400, "y": 400 },
+      "data": { "label": "🛡️ MariaDB (Local/Remote)", "shape": "data", "memo": "실시간 데이터 저장소. 각 환경별로 독립적으로 운영됨." }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": "node-1",
+      "target": "node-2",
+      "label": "1. Build & Push",
+      "type": "tactical",
+      "animated": true,
+      "style": { "stroke": "#00e5ff", "strokeWidth": 2 },
+      "markerEnd": { "type": "arrowclosed", "color": "#00e5ff" }
+    },
+    {
+      "id": "edge-2",
+      "source": "node-2",
+      "target": "node-3",
+      "label": "2. Final Promotion",
+      "type": "tactical",
+      "animated": true,
+      "style": { "stroke": "#fbbf24", "strokeWidth": 3 },
+      "markerEnd": { "type": "arrowclosed", "color": "#fbbf24" }
+    },
+    {
+      "id": "edge-3",
+      "source": "node-1",
+      "target": "node-4",
+      "label": "Snapshot",
+      "type": "tactical",
+      "style": { "stroke": "#30D158", "strokeDasharray": "5,5" },
+      "markerEnd": { "type": "arrowclosed", "color": "#30D158" }
+    },
+    {
+      "id": "edge-4",
+      "source": "node-4",
+      "target": "node-3",
+      "label": "Selective Inject",
+      "type": "tactical",
+      "style": { "stroke": "#30D158" },
+      "markerEnd": { "type": "arrowclosed", "color": "#30D158" }
+    }
+  ],
+  "lastModified": "2026-05-08T15:42:00Z"
+}

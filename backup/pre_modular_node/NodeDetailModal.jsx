@@ -14,13 +14,10 @@ const NodeDetailModal = ({ isOpen, onClose, nodeId }) => {
 
   const isLocked = projectList.find(p => p.id === currentProjectId)?.isLocked;
   
-  const updateNodeMode = useStore((state) => state.updateNodeMode);
-
   const selectedNode = nodes.find(n => n.id === nodeId);
   const [activeTab, setActiveTab] = useState('memo');
   const [label, setLabel] = useState(selectedNode?.data?.label || '');
   const [memo, setMemo] = useState(selectedNode?.data?.memo || '');
-  const [currentMode, setCurrentMode] = useState(selectedNode?.data?.mode || 'hybrid');
   const [copied, setCopied] = useState(false);
   const [prevNodeId, setPrevNodeId] = useState(nodeId);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
@@ -35,33 +32,9 @@ const NodeDetailModal = ({ isOpen, onClose, nodeId }) => {
     setPrevNodeId(nodeId);
     setLabel(selectedNode?.data?.label || '');
     setMemo(selectedNode?.data?.memo || '');
-    setCurrentMode(selectedNode?.data?.mode || 'hybrid');
     setCopied(false);
-    
-    // 모드에 따른 초기 탭 설정
-    const mode = selectedNode?.data?.mode || 'hybrid';
-    if (mode === 'ledger') setActiveTab('ledger');
-    else setActiveTab('memo');
+    setActiveTab('memo');
   }
-
-  const handleModeChange = (newMode) => {
-    if (newMode === currentMode) return;
-
-    // 데이터 손실 방지 경고 로직
-    if (newMode === 'note' && selectedNode?.data?.sheet?.rows?.length > 0) {
-      if (!confirm('⚠️ 장부에 이미 데이터가 존재합니다. [노트 전용]으로 전환하면 장부 데이터가 숨겨지고 대시보드 합산에서 제외됩니다. 진행하시겠습니까?')) return;
-    }
-    if (newMode === 'ledger' && memo && memo !== '<p></p>') {
-      if (!confirm('⚠️ 작성된 메모가 존재합니다. [장부 전용]으로 전환하면 메모가 숨겨집니다. 진행하시겠습니까?')) return;
-    }
-
-    setCurrentMode(newMode);
-    updateNodeMode(nodeId, newMode);
-    
-    // 탭 자동 전환
-    if (newMode === 'ledger') setActiveTab('ledger');
-    if (newMode === 'note') setActiveTab('memo');
-  };
 
   const handleCopy = () => {
     const header = `[전술 거점: ${label}]\n--------------------------\n`;
@@ -126,49 +99,19 @@ const NodeDetailModal = ({ isOpen, onClose, nodeId }) => {
                 />
               </div>
             </div>
-
-            {/* 모드 선택기 (지휘관님 제안 기반 인사이드 토글) */}
-            {!isLocked && (
-              <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '12px', margin: '0 15px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                {[
-                  { id: 'note', label: '노트', icon: <FileText size={14}/> },
-                  { id: 'hybrid', label: '노트+장부', icon: <Copy size={14}/> },
-                  { id: 'ledger', label: '장부', icon: <Calculator size={14}/> }
-                ].map(m => (
-                  <button 
-                    key={m.id}
-                    onClick={() => handleModeChange(m.id)}
-                    style={{
-                      padding: '6px 12px', borderRadius: '8px', border: 'none',
-                      background: currentMode === m.id ? '#00e5ff' : 'transparent',
-                      color: currentMode === m.id ? '#030712' : '#94a3b8',
-                      fontSize: '11px', fontWeight: '800', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.2s'
-                    }}
-                  >
-                    {m.icon} {!isMobile && m.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
             <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#64748b', cursor: 'pointer', padding: '8px', borderRadius: '50%' }}>
               <X size={24} />
             </button>
           </div>
 
-          {/* Tab Selection (모드에 따라 탭 노출 제어) */}
+          {/* Tab Selection */}
           <div style={{ display: 'flex', padding: '0 20px', background: 'rgba(30, 41, 59, 0.3)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-            {(currentMode === 'hybrid' || currentMode === 'note') && (
-              <button onClick={() => setActiveTab('memo')} style={{ padding: '12px 15px', background: 'transparent', border: 'none', borderBottom: `3px solid ${activeTab === 'memo' ? '#00e5ff' : 'transparent'}`, color: activeTab === 'memo' ? '#00e5ff' : '#64748b', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-                <FileText size={16} /> 작전 지침
-              </button>
-            )}
-            {(currentMode === 'hybrid' || currentMode === 'ledger') && (
-              <button onClick={() => setActiveTab('ledger')} style={{ padding: '12px 15px', background: 'transparent', border: 'none', borderBottom: `3px solid ${activeTab === 'ledger' ? '#00e5ff' : 'transparent'}`, color: activeTab === 'ledger' ? '#00e5ff' : '#64748b', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-                <Calculator size={16} /> 전술 장부
-              </button>
-            )}
+            <button onClick={() => setActiveTab('memo')} style={{ padding: '12px 15px', background: 'transparent', border: 'none', borderBottom: `3px solid ${activeTab === 'memo' ? '#00e5ff' : 'transparent'}`, color: activeTab === 'memo' ? '#00e5ff' : '#64748b', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+              <FileText size={16} /> 작전 지침
+            </button>
+            <button onClick={() => setActiveTab('ledger')} style={{ padding: '12px 15px', background: 'transparent', border: 'none', borderBottom: `3px solid ${activeTab === 'ledger' ? '#00e5ff' : 'transparent'}`, color: activeTab === 'ledger' ? '#00e5ff' : '#64748b', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+              <Calculator size={16} /> 전술 장부
+            </button>
           </div>
 
           <div style={{ flex: 1, padding: isMobile ? '15px' : '28px', overflow: 'hidden', position: 'relative' }}>

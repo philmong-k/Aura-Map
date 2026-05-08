@@ -51,8 +51,8 @@ conn.on('ready', () => {
       await runCmd(`rm /home/philmong/${zipName}`);
       
       console.log('Updating Nginx...');
-      // Backup
-      await runCmd(`echo "kasfsk76dd**" | sudo -S cp /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/default.bak`);
+      // Backup (저장소 외부인 /etc/nginx/로 옮겨서 설정 충돌 방지)
+      await runCmd(`echo "kasfsk76dd**" | sudo -S cp /etc/nginx/sites-enabled/default /etc/nginx/default.bak`);
       
       // Replace location block
       // We use a more specific sed to avoid issues

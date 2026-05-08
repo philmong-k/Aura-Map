@@ -8,6 +8,8 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
   const updateNodeSheet = useStore((state) => state.updateNodeSheet);
   const updatePendingRow = useStore((state) => state.updatePendingRow);
   const tacticalTemplates = useStore((state) => state.tacticalTemplates);
+  const sheetLayoutTemplates = useStore((state) => state.sheetLayoutTemplates);
+  const addSheetLayoutTemplate = useStore((state) => state.addSheetLayoutTemplate);
 
   const currentNode = nodes.find(n => n.id === nodeId);
   const data = useMemo(() => currentNode?.data?.sheet || {
@@ -224,17 +226,50 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px', color: '#e2e8f0', position: 'relative' }}>
       {/* 🛠️ 컨트롤 툴바 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button 
-          onClick={() => setIsConfigMode(!isConfigMode)}
-          style={{
-            padding: '6px 12px', borderRadius: '8px', border: 'none',
-            background: isConfigMode ? '#00e5ff' : 'rgba(255,255,255,0.05)',
-            color: isConfigMode ? '#001a1a' : '#94a3b8',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '700'
-          }}
-        >
-          <Settings size={14} /> {isConfigMode ? '설정 완료' : '필드 커스터마이징'}
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button 
+            onClick={() => setIsConfigMode(!isConfigMode)}
+            style={{
+              padding: '6px 12px', borderRadius: '8px', border: 'none',
+              background: isConfigMode ? '#00e5ff' : 'rgba(255,255,255,0.05)',
+              color: isConfigMode ? '#001a1a' : '#94a3b8',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '700'
+            }}
+          >
+            <Settings size={14} /> {isConfigMode ? '설정 완료' : '필드 커스터마이징'}
+          </button>
+          
+          {isConfigMode && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <select 
+                onChange={(e) => {
+                  const layout = sheetLayoutTemplates.find(l => l.id === e.target.value);
+                  if (layout && confirm(`'${layout.name}' 템플릿을 적용하시겠습니까? 현재 필드 구성이 대체됩니다.`)) {
+                    updateNodeSheet(nodeId, { ...data, columns: layout.columns });
+                  }
+                  e.target.value = '';
+                }}
+                style={{ background: 'transparent', border: 'none', color: '#00e5ff', fontSize: '11px', outline: 'none', colorScheme: 'dark', cursor: 'pointer' }}
+              >
+                <option value="">레이아웃 불러오기...</option>
+                {sheetLayoutTemplates.map(l => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+              <button 
+                onClick={() => {
+                  const name = prompt('현재 필드 구성을 저장할 템플릿 이름을 입력하세요:');
+                  if (name) addSheetLayoutTemplate(name, data.columns);
+                }}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                title="현재 구성을 템플릿으로 저장"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+
         {isConfigMode && (
           <button onClick={addColumn} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px dashed #00e5ff', background: 'transparent', color: '#00e5ff', cursor: 'pointer', fontSize: '12px' }}>
             <Plus size={14} /> 새 필드 추가
@@ -276,7 +311,7 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
                         style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#00e5ff', padding: '2px', width: '100%' }}
                       />
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <select value={col.type} onChange={(e) => updateColumn(col.id, 'type', e.target.value)} style={{ background: 'transparent', border: 'none', color: '#64748b', fontSize: '11px', outline: 'none' }}>
+                        <select value={col.type} onChange={(e) => updateColumn(col.id, 'type', e.target.value)} style={{ background: 'transparent', border: 'none', color: '#64748b', fontSize: '11px', outline: 'none', colorScheme: 'dark' }}>
                           <option value="text">텍스트</option>
                           <option value="number">숫자</option>
                           <option value="date">날짜</option>
@@ -287,7 +322,7 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
                           <select 
                             value={col.templateId || ''} 
                             onChange={(e) => updateColumn(col.id, 'templateId', e.target.value)}
-                            style={{ background: 'rgba(0, 229, 255, 0.1)', border: '1px solid rgba(0, 229, 255, 0.3)', color: '#00e5ff', fontSize: '11px', outline: 'none', borderRadius: '4px', padding: '2px 4px' }}
+                            style={{ background: 'rgba(0, 229, 255, 0.1)', border: '1px solid rgba(0, 229, 255, 0.3)', color: '#00e5ff', fontSize: '11px', outline: 'none', borderRadius: '4px', padding: '2px 4px', colorScheme: 'dark' }}
                           >
                             <option value="">템플릿 선택...</option>
                             {tacticalTemplates.map(t => (
@@ -337,7 +372,7 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
                         value={row[col.id] || ''}
                         disabled={isLocked}
                         onChange={(e) => updateCell(row.id, col.id, e.target.value)}
-                        style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#00e5ff', width: '100%', outline: 'none', borderRadius: '4px', padding: '4px' }}
+                        style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#00e5ff', width: '100%', outline: 'none', borderRadius: '4px', padding: '4px', colorScheme: 'dark' }}
                       >
                         <option value="">선택...</option>
                         {tacticalTemplates.find(t => t.id === col.templateId)?.options.split(',').map(opt => (
@@ -380,7 +415,7 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
                         value={newRow[col.id] || ''}
                         onChange={(e) => handleInputChange(col.id, e.target.value)}
                         onKeyDown={handleKeyDown} // 엔터 지원
-                        style={{ background: 'rgba(0, 229, 255, 0.1)', border: 'none', color: '#00e5ff', width: '100%', outline: 'none', borderRadius: '4px', padding: '4px' }}
+                        style={{ background: 'rgba(0, 229, 255, 0.1)', border: 'none', color: '#00e5ff', width: '100%', outline: 'none', borderRadius: '4px', padding: '4px', colorScheme: 'dark' }}
                       >
                         <option value="">선택...</option>
                         {tacticalTemplates.find(t => t.id === col.templateId)?.options.split(',').map(opt => (

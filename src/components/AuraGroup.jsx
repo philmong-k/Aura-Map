@@ -40,12 +40,24 @@ const AuraGroup = ({ id, data, selected }) => {
         } catch { return 0; }
       };
 
+      const targetColumn = columns.find(c => 
+        c.name.includes('소계') || 
+        c.name.includes('합계') || 
+        c.name.toLowerCase().includes('total') || 
+        c.name.toLowerCase().includes('amount') ||
+        c.name.toLowerCase().includes('subtotal')
+      ) || columns.filter(c => c.type === 'number' || c.type === 'formula').slice(-1)[0];
+
+      if (!targetColumn) return acc;
+
       const nodeSum = rows.reduce((rAcc, row) => {
-        return rAcc + columns.reduce((cAcc, col) => {
-          if (col.type === 'number') return cAcc + (parseFloat(row[col.id]) || 0);
-          if (col.type === 'formula') return cAcc + evalFormula(col.formula, row);
-          return cAcc;
-        }, 0);
+        let val = 0;
+        if (targetColumn.type === 'number') {
+          val = parseFloat(row[targetColumn.id]) || 0;
+        } else if (targetColumn.type === 'formula') {
+          val = evalFormula(targetColumn.formula, row);
+        }
+        return rAcc + val;
       }, 0);
 
       return acc + nodeSum;

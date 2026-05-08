@@ -6,16 +6,17 @@ import {
   useReactFlow,
   ReactFlowProvider,
   MarkerType,
-  applyNodeChanges,
-  applyEdgeChanges,
-  addEdge,
   SelectionMode
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Lock } from 'lucide-react';
-import useStore from './store/useStore';
 
-// 새로 분리된 UI 컴포넌트들
+// 스토어 및 커스텀 훅
+import useStore from './store/useStore';
+import { useHelperLines } from './hooks/useHelperLines';
+import { useHotkeys } from './hooks/useHotkeys';
+
+// UI 컴포넌트
 import TopNavigationBar from './components/ui/TopNavigationBar';
 import TacticalControlBar from './components/ui/TacticalControlBar';
 import ProjectLibrarySidebar from './components/ui/ProjectLibrarySidebar';
@@ -25,11 +26,13 @@ import TacticalLegend from './components/ui/TacticalLegend';
 // 캔버스 노드 컴포넌트
 import TacticalNode from './components/TacticalNode';
 import AuraGroup from './components/AuraGroup';
+import SummaryNode from './components/SummaryNode';
 import TacticalEdge from './components/TacticalEdge';
 
 const nodeTypes = {
   tactical: TacticalNode,
   auraGroup: AuraGroup,
+  summary: SummaryNode,
 };
 
 const edgeTypes = {
@@ -47,80 +50,42 @@ const defaultEdgeOptions = {
 };
 
 const FlowCanvas = () => {
-  const nodes = useStore((state) => state.nodes);
-  const edges = useStore((state) => state.edges);
-  const onNodesChange = useStore((state) => state.onNodesChange);
-  const onEdgesChange = useStore((state) => state.onEdgesChange);
-  const onConnect = useStore((state) => state.onConnect);
-  const addNode = useStore((state) => state.addNode);
-  const deleteSelection = useStore((state) => state.deleteSelection);
-  const loadFromBackend = useStore((state) => state.loadFromBackend);
-  const undo = useStore((state) => state.undo);
-  const redo = useStore((state) => state.redo);
-  const currentProjectId = useStore((state) => state.currentProjectId);
-  const projectList = useStore((state) => state.projectList);
-  const createNewProject = useStore((state) => state.createNewProject);
-  const multiSelectMode = useStore((state) => state.multiSelectMode);
-  const isLegendOpen = useStore((state) => state.isLegendOpen);
-  const setIsLegendOpen = useStore((state) => state.setIsLegendOpen);
-  const setMultiSelectMode = useStore((state) => state.setMultiSelectMode);
-  const copySelection = useStore((state) => state.copySelection);
-  const pasteSelection = useStore((state) => state.pasteSelection);
+  // 스토어 상태 및 액션
+  const {
+    nodes, edges, onNodesChange, onEdgesChange, onConnect,
+    addNode, deleteSelection, loadFromBackend, undo, redo,
+    currentProjectId, projectList, createNewProject,
+    multiSelectMode, isLegendOpen, setIsLegendOpen,
+    toggleTacticalSelection, setTacticalSelection
+  } = useStore();
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [isToolboxOpen, setIsToolboxOpen] = useState(true);
+  const [detailModal, setDetailModal] = useState({ isOpen: false, nodeId: null });
 
+  const { screenToFlowPosition, getNodes } = useReactFlow();
+  const reactFlowWrapper = useRef(null);
+
+  // 반응형 처리
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 1024);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  React.useEffect(() => {
+  // 초기 데이터 로드
+  useEffect(() => {
     loadFromBackend();
   }, [loadFromBackend]);
 
-  // 키보드 단축키 처리 (Undo/Redo)
-  React.useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === 'z') {
-          e.preventDefault();
-          undo();
-        } else if (e.key === 'y') {
-          e.preventDefault();
-          redo();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo]);
-  
-  const { screenToFlowPosition, getNodes } = useReactFlow();
-  const reactFlowWrapper = useRef(null);
-  
-  const [helperLines, setHelperLines] = useState({ x: null, y: null });
-  const [showLibrary, setShowLibrary] = useState(false);
-  const [isToolboxOpen, setIsToolboxOpen] = useState(true);
-  const [detailModal, setDetailModal] = useState({ isOpen: false, nodeId: null });
+  // 커스텀 훅 적용 (헬퍼 라인 및 단축키)
+  const { helperLines, onNodeDrag, onNodeDragStop } = useHelperLines(getNodes);
+  useHotkeys(undo, redo);
 
   const openDetail = useCallback((id) => {
     setDetailModal({ isOpen: true, nodeId: id });
   }, []);
-
-  const onNodeDrag = useCallback((_, node) => {
-    const allNodes = getNodes();
-    const threshold = 10;
-    const lines = { x: null, y: null };
-    allNodes.forEach((otherNode) => {
-      if (otherNode.id === node.id || otherNode.type === 'auraGroup') return;
-      if (Math.abs(otherNode.position.x - node.position.x) < threshold) lines.x = otherNode.position.x;
-      if (Math.abs(otherNode.position.y - node.position.y) < threshold) lines.y = otherNode.position.y;
-    });
-    setHelperLines(lines);
-  }, [getNodes]);
-
-  const onNodeDragStop = () => setHelperLines({ x: null, y: null });
 
   const onNodesDelete = useCallback((deletedNodes) => {
     deleteSelection(deletedNodes, []);
@@ -145,19 +110,69 @@ const FlowCanvas = () => {
 
   const currentProject = projectList.find(p => p.id === currentProjectId);
   const isLocked = currentProject?.isLocked;
-  const toggleNodeSelection = useStore((state) => state.toggleNodeSelection);
+
+  // 📊 프로젝트 전체 총액 계산 (Canvas Global Total)
+  const projectTotal = React.useMemo(() => {
+    return nodes.reduce((acc, node) => {
+      if (node.type !== 'tactical' || node.data?.mode === 'note') return acc;
+      
+      const sheet = node.data?.sheet;
+      if (!sheet || !sheet.rows || !sheet.columns) return acc;
+      
+      const columns = sheet.columns;
+      const rows = sheet.rows;
+
+      const targetColumn = columns.find(c => 
+        c.name.includes('소계') || 
+        c.name.includes('합계') || 
+        c.name.toLowerCase().includes('total') || 
+        c.name.toLowerCase().includes('amount') ||
+        c.name.toLowerCase().includes('subtotal')
+      ) || columns.filter(c => c.type === 'number' || c.type === 'formula').slice(-1)[0];
+
+      if (!targetColumn) return acc;
+
+      const nodeSum = rows.reduce((rAcc, row) => {
+        let val = 0;
+        if (targetColumn.type === 'number') {
+          val = parseFloat(row[targetColumn.id]) || 0;
+        } else if (targetColumn.type === 'formula') {
+          // 간이 수식 계산 (AuraGroup과 동일 로직)
+          try {
+            let expr = targetColumn.formula;
+            columns.forEach(c => {
+              const v = parseFloat(row[c.id]) || 0;
+              const r = new RegExp(`\\b${c.id}\\b`, 'g');
+              expr = expr.replace(r, v);
+            });
+            val = Function(`"use strict"; return (${expr})`)() || 0;
+          } catch { val = 0; }
+        }
+        return rAcc + val;
+      }, 0);
+      
+      return acc + nodeSum;
+    }, 0);
+  }, [nodes]);
 
   const onNodeClick = useCallback((event, node) => {
-    // [전술적 직접 제어] 다중 선택 모드일 때는 라이브러리의 자동 선택을 우회하고 직접 토글함
     if (multiSelectMode) {
-      toggleNodeSelection(node.id);
+      toggleTacticalSelection(node.id);
     }
-  }, [multiSelectMode, toggleNodeSelection]);
+  }, [multiSelectMode, toggleTacticalSelection]);
+
+  const onSelectionChange = useCallback(({ nodes: selectedNodes }) => {
+    if (multiSelectMode && selectedNodes.length > 0) {
+      const selectedIds = selectedNodes.map(n => n.id);
+      const currentSelection = useStore.getState().tacticalSelection;
+      const newSelection = Array.from(new Set([...currentSelection, ...selectedIds]));
+      setTacticalSelection(newSelection);
+    }
+  }, [multiSelectMode, setTacticalSelection]);
 
   return (
     <div ref={reactFlowWrapper} style={{ width: '100vw', height: '100vh', background: '#030712', position: 'relative', overflow: 'hidden', touchAction: 'none' }}>
       
-      {/* 1. 상단 네비게이션 바 */}
       <TopNavigationBar 
         showLibrary={showLibrary} 
         setShowLibrary={setShowLibrary}
@@ -165,33 +180,20 @@ const FlowCanvas = () => {
         setIsToolboxOpen={setIsToolboxOpen}
         isLegendOpen={isLegendOpen}
         setIsLegendOpen={setIsLegendOpen}
+        projectTotal={projectTotal}
       />
 
-      {/* 2. 전술 아카이브 (도서관) */}
       <ProjectLibrarySidebar showLibrary={showLibrary} setShowLibrary={setShowLibrary} />
 
       {currentProjectId ? (
         <>
           {isLocked && (
             <div style={{
-              position: 'absolute',
-              top: '70px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              zIndex: 100,
-              background: 'rgba(251, 191, 36, 0.2)',
-              border: '1px solid #fbbf24',
-              color: '#fbbf24',
-              padding: '6px 16px',
-              borderRadius: '20px',
-              fontSize: '12px',
-              fontWeight: '700',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              backdropFilter: 'blur(10px)',
-              pointerEvents: 'none',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+              position: 'absolute', top: '70px', left: '50%', transform: 'translateX(-50%)',
+              zIndex: 100, background: 'rgba(251, 191, 36, 0.2)', border: '1px solid #fbbf24',
+              color: '#fbbf24', padding: '6px 16px', borderRadius: '20px', fontSize: '12px',
+              fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px',
+              backdropFilter: 'blur(10px)', pointerEvents: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
             }}>
               <Lock size={14} /> 편집 잠금 모드 가동 중
             </div>
@@ -209,9 +211,8 @@ const FlowCanvas = () => {
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
             onNodeClick={onNodeClick}
-            onNodeDoubleClick={(e, node) => {
-              setDetailModal({ isOpen: true, nodeId: node.id });
-            }}
+            onSelectionChange={onSelectionChange}
+            onNodeDoubleClick={(e, node) => setDetailModal({ isOpen: true, nodeId: node.id })}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             defaultEdgeOptions={defaultEdgeOptions}
@@ -264,30 +265,14 @@ const FlowCanvas = () => {
         </>
       ) : (
         <div style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'radial-gradient(circle at center, #0f172a 0%, #030712 100%)',
-          color: '#fff',
-          textAlign: 'center',
-          padding: '20px',
-          zIndex: 5
+          width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at center, #0f172a 0%, #030712 100%)',
+          color: '#fff', textAlign: 'center', padding: '20px', zIndex: 5
         }}>
           <div style={{
-            padding: '50px',
-            background: 'rgba(255,255,255,0.03)',
-            backdropFilter: 'blur(30px)',
-            borderRadius: '40px',
-            border: '1px solid rgba(255,255,255,0.1)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '25px',
-            boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
-            maxWidth: '500px'
+            padding: '50px', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(30px)',
+            borderRadius: '40px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex',
+            flexDirection: 'column', alignItems: 'center', gap: '25px', boxShadow: '0 25px 60px rgba(0,0,0,0.6)', maxWidth: '500px'
           }}>
             <h1 style={{ fontSize: '3rem', margin: 0, filter: 'drop-shadow(0 0 20px #00e5ff)', color: '#00e5ff', fontFamily: 'Outfit, sans-serif' }}>Agent Canvas</h1>
             <div style={{ marginTop: '10px' }}>
@@ -307,19 +292,10 @@ const FlowCanvas = () => {
                 createNewProject(`신규 프로젝트-${dateStr} (${timeStr})`);
               }}
               style={{
-                marginTop: '15px',
-                padding: '18px 50px',
-                background: 'linear-gradient(135deg, #00e5ff 0%, #00b4d8 100%)',
-                color: '#030712',
-                border: 'none',
-                borderRadius: '20px',
-                fontWeight: '900',
-                fontSize: '1.2rem',
-                cursor: 'pointer',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: '0 10px 30px rgba(0,229,255,0.3)',
-                textTransform: 'uppercase',
-                letterSpacing: '1px'
+                marginTop: '15px', padding: '18px 50px', background: 'linear-gradient(135deg, #00e5ff 0%, #00b4d8 100%)',
+                color: '#030712', border: 'none', borderRadius: '20px', fontWeight: '900', fontSize: '1.2rem',
+                cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 10px 30px rgba(0,229,255,0.3)',
+                textTransform: 'uppercase', letterSpacing: '1px'
               }}
               onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
               onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
@@ -333,7 +309,6 @@ const FlowCanvas = () => {
         </div>
       )}
 
-      {/* 5. 전술 기호 가이드 (범례) */}
       <TacticalLegend isOpen={isLegendOpen} onClose={() => setIsLegendOpen(false)} />
     </div>
   );

@@ -140,3 +140,21 @@
     display: none;
   }
 }
+
+/* 글로벌 드롭다운(select) 및 옵션 가시성 보정 */
+select {
+  cursor: pointer;
+  color-scheme: dark; /* 브라우저 기본 UI를 다크 테마로 유도 */
+}
+
+select option {
+  background-color: #1e293b; /* 어두운 배경 (Slate 800) */
+  color: #ffffff;           /* 흰색 글자 */
+  padding: 8px;
+}
+
+/* 일부 브라우저 호환성을 위한 추가 보정 */
+select:focus option {
+  color: #ffffff;
+  background-color: #334155;
+}

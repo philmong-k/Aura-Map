@@ -96,8 +96,8 @@ const TacticalNode = ({ id, data, selected }) => {
       <Handle type="target" position={Position.Right} id="t-right" style={{ background: '#00e5ff', top: '35%', width: '10px', height: '10px', border: '2px solid #0f172a', zIndex: 50 }} />
       <Handle type="source" position={Position.Right} id="s-right" style={{ background: '#a855f7', top: '65%', width: '10px', height: '10px', border: '2px solid #0f172a', zIndex: 50 }} />
 
-      {/* 📊 실시간 시트 데이터 합산 배지 (장부 모드가 활성화된 경우만 표시) */}
-      {data.mode !== 'note' && data.sheet && data.sheet.rows && data.sheet.rows.length > 0 && (() => {
+      {/* 📊 실시간 시트 데이터 합산 배지 */}
+      {data.sheet && data.sheet.rows && data.sheet.rows.length > 0 && (() => {
         const columns = data.sheet.columns || [];
         const rows = data.sheet.rows || [];
 
@@ -185,14 +185,14 @@ const TacticalNode = ({ id, data, selected }) => {
         </div>
       </div>
 
-      {/* 상세 내용 존재 아이콘 (모드에 따라 필터링) */}
+      {/* 상세 내용 존재 아이콘 */}
       <div style={{ position: 'absolute', bottom: '6px', right: '10px', display: 'flex', gap: '6px', alignItems: 'center' }}>
-        {data.mode !== 'ledger' && data.memo && (
+        {data.memo && (
           <div style={{ color: '#e879f9', opacity: 0.8, display: 'flex' }} title="메모 존재">
             <FileText size={12} />
           </div>
         )}
-        {data.mode !== 'note' && data.sheet && (
+        {data.sheet && (
           <div style={{ color: '#00e5ff', opacity: 0.8, display: 'flex' }} title="장부 데이터 존재">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
           </div>
