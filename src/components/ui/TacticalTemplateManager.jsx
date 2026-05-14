@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Save, Trash2, Database, List, Settings } from 'lucide-react';
+import { X, Plus, Save, Trash2, Database, List } from 'lucide-react';
 import useStore from '../../store/useStore';
 
 const TacticalTemplateManager = ({ isOpen, onClose }) => {
@@ -8,8 +8,6 @@ const TacticalTemplateManager = ({ isOpen, onClose }) => {
   const addTemplate = useStore((state) => state.addTemplate);
   const updateTemplate = useStore((state) => state.updateTemplate);
   const deleteTemplate = useStore((state) => state.deleteTemplate);
-  const sheetLayoutTemplates = useStore((state) => state.sheetLayoutTemplates);
-  const deleteSheetLayoutTemplate = useStore((state) => state.deleteSheetLayoutTemplate);
 
   const [isAdding, setIsAdding] = useState(false);
   const [newTemplate, setNewTemplate] = useState({ name: '', options: '' });
@@ -27,7 +25,7 @@ const TacticalTemplateManager = ({ isOpen, onClose }) => {
     setEditingId(null);
   };
 
-  // 부모(ProjectLibrarySidebar)에서 이미 조건부 렌더링을 제어하므로 내부 체크 불필요
+  if (!isOpen) return null;
 
   return (
     <div 
@@ -81,29 +79,6 @@ const TacticalTemplateManager = ({ isOpen, onClose }) => {
               </div>
               <div style={{ fontSize: '12px', color: '#64748b', background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '6px', wordBreak: 'break-all' }}>
                 {template.options}
-              </div>
-            </div>
-          ))}
-
-          <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px', color: '#00e5ff', fontWeight: '800', fontSize: '14px' }}>
-             <Settings size={18} /> 필드 레이아웃 템플릿
-          </div>
-
-          {sheetLayoutTemplates.map(layout => (
-            <div key={layout.id} style={{ padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168, 85, 247, 0.3)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Database size={16} style={{ color: '#a855f7' }} />
-                  <span style={{ fontWeight: '700', color: '#fff' }}>{layout.name}</span>
-                </div>
-                <button onClick={() => deleteSheetLayoutTemplate(layout.id)} style={{ background: 'transparent', border: 'none', color: '#334155', cursor: 'pointer' }}><Trash2 size={16} /></button>
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                {layout.columns.map(c => (
-                  <span key={c.id} style={{ fontSize: '10px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px', color: '#94a3b8' }}>
-                    {c.name} ({c.type})
-                  </span>
-                ))}
               </div>
             </div>
           ))}

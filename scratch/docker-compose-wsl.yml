@@ -1,0 +1,19 @@
+
+version: '3.8'
+
+services:
+  quark-db:
+    container_name: quark-db
+    image: mariadb:10.6
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: 'kasfsk76dd**'
+      MARIADB_DATABASE: 'aura_db'
+    ports:
+      - '3306:3306'
+    volumes:
+      - ./data/mariadb:/var/lib/mysql
+
+networks:
+  default:
+    name: aura-network

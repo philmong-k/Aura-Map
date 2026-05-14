@@ -6,16 +6,19 @@ import useStore from '../store/useStore';
 const TacticalNode = ({ id, data, selected }) => {
   const onCycleShape = useStore((state) => state.onCycleShape);
   const tacticalSelection = useStore((state) => state.tacticalSelection);
+  const multiSelectMode = useStore((state) => state.multiSelectMode);
   
-  // [전술적 혁명] 라이브러리의 selected와 우리의 tacticalSelection을 통합
-  const isTacticalSelected = tacticalSelection.includes(id);
-  const isSelected = selected || isTacticalSelected;
+  // 🛡️ 지니어스 엔진: 전술적 주권 (Sovereignty) 확립
+  // 다중 선택 모드일 때는 라이브러리의 selected 속성을 무시하고 우리의 tacticalSelection 명부만 따름
+  const isTacticallySelected = multiSelectMode 
+    ? tacticalSelection.includes(id) 
+    : selected;
   
   const shape = data.shape || 'process'; 
 
   // 배지에 들어갈 도형 SVG 렌더링 함수
   const renderShapeBadge = () => {
-    const color = isSelected ? '#030712' : '#00e5ff';
+    const color = isTacticallySelected ? '#030712' : '#00e5ff';
     switch (shape) {
       case 'decision': 
         return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3"><path d="M12 2l10 10-10 10L2 12z"/></svg>;
@@ -34,7 +37,7 @@ const TacticalNode = ({ id, data, selected }) => {
 
   return (
     <div 
-      className={`tactical-node-wrapper glass-panel ${isSelected ? 'selected' : ''}`}
+      className={`tactical-node-wrapper glass-panel ${isTacticallySelected ? 'selected' : ''}`}
       style={{
         padding: '16px 12px 12px 12px',
         minWidth: '200px',
@@ -43,8 +46,8 @@ const TacticalNode = ({ id, data, selected }) => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        border: isSelected ? '2.5px solid #00e5ff' : '1.5px solid rgba(255, 255, 255, 0.5)',
-        boxShadow: isSelected 
+        border: isTacticallySelected ? '2.5px solid #00e5ff' : '1.5px solid rgba(255, 255, 255, 0.5)',
+        boxShadow: isTacticallySelected 
           ? '0 0 30px rgba(0, 229, 255, 0.6)' 
           : '0 0 15px rgba(255, 255, 255, 0.1)',
         borderRadius: '14px',
@@ -66,9 +69,9 @@ const TacticalNode = ({ id, data, selected }) => {
           position: 'absolute',
           top: '-14px',
           left: '12px',
-          background: isSelected ? '#00e5ff' : '#1e293b',
-          color: isSelected ? '#030712' : '#ffffff',
-          border: `1.5px solid ${isSelected ? '#00e5ff' : 'rgba(255,255,255,0.4)'}`,
+          background: isTacticallySelected ? '#00e5ff' : '#1e293b',
+          color: isTacticallySelected ? '#030712' : '#ffffff',
+          border: `1.5px solid ${isTacticallySelected ? '#00e5ff' : 'rgba(255,255,255,0.4)'}`,
           borderRadius: '8px',
           padding: '4px 8px',
           cursor: 'pointer',
@@ -96,8 +99,8 @@ const TacticalNode = ({ id, data, selected }) => {
       <Handle type="target" position={Position.Right} id="t-right" style={{ background: '#00e5ff', top: '35%', width: '10px', height: '10px', border: '2px solid #0f172a', zIndex: 50 }} />
       <Handle type="source" position={Position.Right} id="s-right" style={{ background: '#a855f7', top: '65%', width: '10px', height: '10px', border: '2px solid #0f172a', zIndex: 50 }} />
 
-      {/* 📊 실시간 시트 데이터 합산 배지 (장부 모드가 활성화된 경우만 표시) */}
-      {data.mode !== 'note' && data.sheet && data.sheet.rows && data.sheet.rows.length > 0 && (() => {
+      {/* 📊 실시간 시트 데이터 합산 배지 */}
+      {data.sheet && data.sheet.rows && data.sheet.rows.length > 0 && (() => {
         const columns = data.sheet.columns || [];
         const rows = data.sheet.rows || [];
 
@@ -133,22 +136,26 @@ const TacticalNode = ({ id, data, selected }) => {
           } catch { return 0; }
         };
 
-        // 지능형 타겟 컬럼 선정 (소계, 합계, Total 등 우선, 없으면 마지막 숫자/수식 컬럼)
-        const targetColumn = columns.find(c => 
-          c.name.includes('소계') || 
-          c.name.includes('합계') || 
-          c.name.toLowerCase().includes('total') || 
-          c.name.toLowerCase().includes('amount') ||
-          c.name.toLowerCase().includes('subtotal')
-        ) || columns.filter(c => c.type === 'number' || c.type === 'formula').slice(-1)[0];
-
-        if (!targetColumn) return null;
-
         const total = rows.reduce((acc, row) => {
-          let val = 0;
-          if (targetColumn.type === 'number') val = parseFloat(row[targetColumn.id]) || 0;
-          else if (targetColumn.type === 'formula') val = evalFormula(targetColumn.formula, row);
-          return acc + val;
+          // 1. 대표 수식 필드(c4 또는 '계', '합' 포함)가 있으면 해당 값만 합산 (중복 합산 방지)
+          const targetCol = columns.find(c => 
+            (c.type === 'formula' || c.type === 'number') && 
+            (c.id === 'c4' || c.name.includes('계') || c.name.includes('합') || c.name.includes('소계'))
+          );
+
+          if (targetCol) {
+            if (targetCol.type === 'formula') {
+              return acc + evalFormula(targetCol.formula, row);
+            } else {
+              return acc + (parseFloat(row[targetCol.id]) || 0);
+            }
+          }
+          
+          // 2. 대표 필드가 없으면 모든 숫자 필드를 합산 (Legacy 지원)
+          return acc + columns.reduce((rAcc, col) => {
+            if (col.type === 'number') return rAcc + (parseFloat(row[col.id]) || 0);
+            return rAcc;
+          }, 0);
         }, 0);
 
         if (total === 0) return null;
@@ -185,14 +192,14 @@ const TacticalNode = ({ id, data, selected }) => {
         </div>
       </div>
 
-      {/* 상세 내용 존재 아이콘 (모드에 따라 필터링) */}
+      {/* 상세 내용 존재 아이콘 */}
       <div style={{ position: 'absolute', bottom: '6px', right: '10px', display: 'flex', gap: '6px', alignItems: 'center' }}>
-        {data.mode !== 'ledger' && data.memo && (
+        {data.memo && (
           <div style={{ color: '#e879f9', opacity: 0.8, display: 'flex' }} title="메모 존재">
             <FileText size={12} />
           </div>
         )}
-        {data.mode !== 'note' && data.sheet && (
+        {data.sheet && (
           <div style={{ color: '#00e5ff', opacity: 0.8, display: 'flex' }} title="장부 데이터 존재">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
           </div>

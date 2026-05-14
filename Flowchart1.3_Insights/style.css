@@ -1,0 +1,824 @@
+:root {
+    --bg-color: #0d0d12;
+    --grid-color-sub: rgba(255, 255, 255, 0.03);
+    --grid-color-main: rgba(255, 255, 255, 0.07);
+    --accent-color: #6366f1;
+    --success-color: #22c55e;
+    --failure-color: #ef4444;
+    --warning-color: #f59e0b;
+    --normal-color: #94a3b8;
+    --bg-dark: #0f172a;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --grid-size: 20px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--bg-color);
+    font-family: 'Pretendard', sans-serif;
+    color: var(--text-primary);
+}
+
+#app {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+#canvas-container {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    user-select: none;
+}
+
+#canvas-container:active {
+    cursor: grabbing;
+}
+
+#transformer {
+    position: absolute;
+    width: 100000px; 
+    height: 100000px;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+}
+
+#transformer.smooth-move {
+    transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+#connections-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100000px;
+    height: 100000px;
+    pointer-events: none;
+    z-index: 4;
+}
+
+.connection-line {
+    fill: none;
+    stroke: var(--accent-color);
+    stroke-width: 2.5;
+    transition: stroke 0.2s, stroke-width 0.2s, filter 0.2s;
+    pointer-events: none; /* 실제 가느다란 선은 클릭을 통과시킴 */
+}
+
+/* 🧲 선 클릭 판정 범위 확대 (Hit-area) */
+.connection-hit-area {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 15; /* 넉넉한 15px 판정 범위 */
+    cursor: pointer;
+    pointer-events: stroke;
+}
+
+/* 호버 시 시각적 피드백: 두꺼운 hitArea에 호버 시 얇은 실제 선이 굵어짐 */
+.connection-hit-area:hover + .connection-line {
+    stroke-width: 4.5;
+    filter: brightness(1.3) drop-shadow(0 0 3px var(--accent-color));
+}
+
+#grid-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* 서브 그리드와 메인 그리드 각각에 대해 사이즈 정의 */
+    background-size: var(--grid-size) var(--grid-size), calc(var(--grid-size) * 5) calc(var(--grid-size) * 5);
+    background-image: 
+        linear-gradient(to right, var(--grid-color-sub) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-color-sub) 1px, transparent 1px);
+    /* 메인 그리드를 위해 가상 요소를 사용하거나 다중 배경 활용 */
+}
+
+#grid-background::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: calc(var(--grid-size) * 5) calc(var(--grid-size) * 5);
+    background-image: 
+        linear-gradient(to right, var(--grid-color-main) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-color-main) 1px, transparent 1px);
+    pointer-events: none;
+}
+
+#ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+#ui-overlay > * {
+    pointer-events: auto;
+}
+
+.top-bar {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    backdrop-filter: blur(8px);
+    background: var(--glass-bg);
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+.top-bar h1 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    background: var(--accent-color);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+#mini-map-container {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 200px;
+    height: 150px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    cursor: crosshair; 
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); /* 부드러운 가변 애니메이션 */
+    z-index: 50; /* 확장 시 다른 UI 위로 올라오도록 설정 */
+}
+
+#mini-map-container:hover {
+    width: 500px; /* 2.5배 확장 */
+    height: 375px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+#mini-map-canvas {
+    width: 100%;
+    height: 100%;
+    opacity: 0.5;
+}
+
+#mini-map-viewport {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 1.5px solid #ff9800; /* 시인성을 위해 주황색 강조 */
+    background: rgba(255, 152, 0, 0.2); /* 반투명 배경 추가 */
+    pointer-events: none;
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+}
+
+.controls-guide {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    gap: 15px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.controls-guide span {
+    backdrop-filter: blur(4px);
+    background: var(--glass-bg);
+    padding: 5px 12px;
+    border-radius: 8px;
+}
+
+/* --- Node Creation Menu --- */
+#creation-menu {
+    position: absolute;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(10, 10, 15, 0.95); /* 배경색을 더 진하게 변경 */
+    backdrop-filter: blur(8px); /* 블러를 낮춰 렌더링 부하 감소 */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 10px;
+    border-radius: 12px;
+    z-index: 100;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.8); /* 그림자 강화 */
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #e2e8f0; /* 가독성을 위해 텍스트 색상 상향 */
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.menu-item:hover {
+    background: var(--accent-color);
+    color: white;
+}
+
+.menu-item .icon {
+    width: 20px;
+    height: 12px;
+    border: 1px solid currentColor;
+}
+
+.menu-item[data-type="Diamond"] .icon {
+    height: 20px;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+.menu-item[data-type="Oval"] .icon {
+    border-radius: 50%;
+}
+
+.menu-item[data-type="Cylinder"] .icon {
+    border-radius: 2px / 4px;
+}
+
+/* --- Nodes --- */
+.node {
+    position: absolute;
+    width: 150px;
+    height: 60px;
+    background: #1e1e26;
+    border: 2px solid #333340;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+    font-weight: 600;
+    cursor: grab;
+    user-select: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    z-index: 5;
+}
+
+.node:active {
+    cursor: grabbing;
+}
+
+.node.selected {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+}
+
+/* Ports */
+.port {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #6366f1;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    cursor: crosshair;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+/* 🧲 판정 범위 확장 (보이지 않는 히트박스) */
+.port::after {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: -15px;
+    right: -15px;
+    bottom: -15px;
+    border-radius: 50%;
+}
+
+.node:hover .port {
+    opacity: 1;
+}
+
+.port:hover {
+    transform: scale(1.6);
+    background: #818cf8;
+}
+
+.port:hover {
+    transform: scale(1.3);
+    background: #fff;
+    border-color: #6366f1;
+}
+
+.port.top { top: -6px; left: calc(50% - 6px); }
+.port.bottom { bottom: -6px; left: calc(50% - 6px); }
+.port.left { left: -6px; top: calc(50% - 6px); }
+.port.right { right: -6px; top: calc(50% - 6px); }
+
+/* Diamond Shape */
+.node.diamond {
+    height: 90px;
+    background: transparent;
+    border: none;
+}
+.node.diamond .shape-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #1e1e26;
+    border: 2px solid #333340;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+/* Oval Shape */
+.node.oval {
+    border-radius: 50px;
+}
+
+/* Cylinder Shape */
+.node.cylinder {
+    border-radius: 0;
+    border-top: none;
+    border-bottom: none;
+}
+.node.cylinder::before, .node.cylinder::after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    width: calc(100% + 4px);
+    height: 14px;
+    background: #1e1e26;
+    border: 2px solid #333340;
+    border-radius: 50%;
+    z-index: -1;
+}
+.node.cylinder::before { top: -7px; }
+.node.cylinder::after { bottom: -7px; }
+
+.node span {
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* 📐 Drawer & Data Entry System */
+.drawer {
+    position: fixed;
+    top: 20px;
+    right: -350px;
+    width: 320px;
+    height: calc(100% - 40px);
+    background: rgba(30, 30, 40, 0.85);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 24px;
+    color: white;
+    border-radius: 20px 0 0 20px;
+}
+
+.drawer.open {
+    right: 0;
+}
+
+/* 💡 드래그/팬 중일 때 시야 확보를 위해 투명화 */
+.drawer.panning-mode {
+    opacity: 0.15;
+    pointer-events: none;
+}
+
+.drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 12px;
+}
+
+.drawer-header h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    line-height:1;
+}
+
+.drawer-content label {
+    display: block;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 20px;
+    margin-bottom: 4px;
+    font-weight: 700; /* Main Label 강조 */
+}
+
+.drawer-content .hint-text {
+    display: block;
+    font-size: 0.75rem;
+    color: #a5b4fc; /* 부드러운 인디고 색상 */
+    margin-bottom: 12px;
+    opacity: 0.9;
+    line-height: 1.4;
+}
+
+.drawer-content input, 
+.drawer-content textarea,
+.drawer-content select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px;
+    color: white;
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.drawer-content input:focus, 
+.drawer-content textarea:focus {
+    border-color: var(--accent-color);
+}
+
+/* 🎨 Line Color Themes */
+.line-success { stroke: var(--success-color) !important; }
+.line-failure { stroke: var(--failure-color) !important; }
+.line-warning { stroke: var(--warning-color) !important; }
+.line-normal { stroke: var(--normal-color) !important; }
+
+/* 💡 화살촉(Arrowhead) 테마 색상 동기화 (Fill 적용) */
+.arrowhead.line-success { fill: var(--success-color); stroke: none; }
+.arrowhead.line-failure { fill: var(--failure-color); stroke: none; }
+.arrowhead.line-warning { fill: var(--warning-color); stroke: none; }
+.arrowhead.line-normal { fill: var(--normal-color); stroke: none; }
+
+.color-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: 1px solid transparent;
+    margin-top: 4px;
+}
+
+.color-option:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.color-option.active {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+.color-swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.color-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.color-swatch.success { background: var(--success-color); }
+.color-swatch.failure { background: var(--failure-color); }
+.color-swatch.warning { background: var(--warning-color); }
+.color-swatch.normal { background: var(--normal-color); }
+
+/* 🏷 Edge Label Badge */
+.edge-label-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.edge-label {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    background: rgba(30, 30, 45, 0.85);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: #e2e8f0;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.color-picker {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.color-swatch {
+    height: 30px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s;
+}
+
+.color-swatch:hover { transform: scale(1.1); }
+.color-swatch.active { border-color: white; }
+.color-swatch.success { background: var(--success-color); }
+.color-swatch.failure { background: var(--failure-color); }
+.color-swatch.warning { background: var(--warning-color); }
+.color-swatch.normal { background: var(--normal-color); }
+
+/* 🛠 Action Menu (Bottom Right) */
+.action-menu {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    gap: 8px;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(16px);
+    padding: 8px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+}
+
+.fab-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fab-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.fab-btn.primary {
+    background: var(--accent-color);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+.fab-btn.primary:hover {
+    background: #818cf8;
+}
+
+.fab-btn.highlight {
+    background: rgba(168, 85, 247, 0.2);
+    border-color: rgba(168, 85, 247, 0.4);
+    color: #c084fc;
+}
+
+.fab-btn.highlight:hover {
+    background: rgba(168, 85, 247, 0.4);
+}
+
+.fab-btn.danger {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+}
+
+.fab-btn.danger:hover {
+    background: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.drawer-delete-btn {
+    width: 100%;
+    margin-top: 40px;
+    padding: 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    color: #f87171;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.drawer-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #ffffff;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
+}
+
+/* [Phase 5.3] AI 드롭다운 메뉴 스타일 */
+.ai-dropdown-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.ai-dropdown-menu {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(30, 41, 59, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 8px;
+    width: 220px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    z-index: 2000;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-dropdown-menu.active {
+    display: flex;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.ai-menu-item {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.ai-menu-item:hover {
+    background: rgba(168, 85, 247, 0.2);
+    color: #a855f7;
+    padding-left: 18px;
+}
+
+/* [Phase 5.3] Toast 알림 스타일 */
+.toast-container {
+    position: fixed;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5000;
+    pointer-events: none;
+}
+
+.toast-message {
+    background: rgba(168, 85, 247, 0.9);
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+    animation: toast-fade-in-out 3s forwards;
+    margin-bottom: 10px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes toast-fade-in-out {
+    0% { opacity: 0; transform: translateY(-20px); }
+    15% { opacity: 1; transform: translateY(0); }
+    85% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
+}
+
+.action-menu .separator {
+    width: 1px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: auto 8px;
+}
+/* [Phase 5.4] 프로페셔널 캡처 드롭다운 스타일 */
+.capture-dropdown-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.capture-dropdown-menu {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(30, 41, 59, 0.9);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 8px;
+    width: 200px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    z-index: 2000;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.capture-dropdown-menu.active {
+    display: flex;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.capture-menu-item {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #e2e8f0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.capture-menu-item:hover {
+    background: var(--accent-color);
+    color: white;
+}
+
+/* 🎨 [Phase 5.4] 캡처 모드 전용 노드 스타일 보정 */
+.node.is-capturing {
+    border-width: 3px !important; /* 가독성을 위해 테두리 강화 */
+    box-shadow: none !important;
+}
+
+.node.is-capturing span {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    line-height: 1.4 !important;
+    white-space: normal !important; /* 줄바꿈 활성화 */
+    text-align: center;
+    padding: 10px;
+    display: -webkit-box;
+    -webkit-line-clamp: 4; /* 최대 4줄까지 표시 */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

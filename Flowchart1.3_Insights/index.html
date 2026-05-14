@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flowchart v1.3 - Infinite Canvas</title>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <div id="canvas-container">
+            <div id="transformer">
+            <svg id="connections-layer">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                            refX="10" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1" />
+                    </marker>
+                </defs>
+            </svg>
+                <!-- 격자 배경 레이어 -->
+                <div id="grid-background"></div>
+                <!-- 노드 및 연결선 레이어 -->
+                <div id="elements-layer"></div>
+            </div>
+        </div>
+        
+        <!-- UI Overlay -->
+        <div id="ui-overlay">
+            <div class="top-bar">
+                <h1>Flowchart v1.3</h1>
+                <div class="status-badge">Phase 2: Node System</div>
+            </div>
+
+            <div id="creation-menu">
+                <div class="menu-item" data-type="Rectangle">
+                    <div class="icon"></div>
+                    <span>Rectangle</span>
+                </div>
+                <div class="menu-item" data-type="Diamond">
+                    <div class="icon"></div>
+                    <span>Diamond</span>
+                </div>
+                <div class="menu-item" data-type="Cylinder">
+                    <div class="icon"></div>
+                    <span>Cylinder</span>
+                </div>
+                <div class="menu-item" data-type="Oval">
+                    <div class="icon"></div>
+                    <span>Oval</span>
+                </div>
+            </div>
+
+            <div id="mini-map-container">
+                <canvas id="mini-map-canvas"></canvas>
+                <div id="mini-map-viewport"></div>
+            </div>
+
+            <div class="controls-guide">
+                <span>Space + Drag: Pan</span>
+                <span>Scroll: Zoom</span>
+                <span>(0,0)</span>
+            </div>
+        </div>
+    </div>
+    <!-- 우측 정보 패널 (Drawer) -->
+    <div id="side-drawer" class="drawer">
+        <div class="drawer-header">
+            <h2 id="drawer-title">Element Info</h2>
+            <button id="close-drawer" class="close-btn">&times;</button>
+        </div>
+        <div id="drawer-content" class="drawer-content">
+            <!-- 타입별 동적 폼이 여기에 생성됨 -->
+        </div>
+    </div>
+
+    <!-- 우측 하단 액션 메뉴 (Phase 5) -->
+    <div id="action-menu" class="action-menu">
+        <button id="undo-btn" class="fab-btn" title="Undo (Ctrl+Z)">↺</button>
+        <button id="redo-btn" class="fab-btn" title="Redo (Ctrl+Y)">↻</button>
+        <div class="separator"></div>
+        <button id="export-json" class="fab-btn" title="Save as JSON">💾</button>
+        <button id="import-json-trigger" class="fab-btn" title="Load JSON">📁</button>
+        
+        <!-- [Phase 5.3] AI 드롭다운 메뉴 -->
+        <div class="ai-dropdown-container">
+            <button id="copy-ai" class="fab-btn highlight" title="Send to AI">✨ AI</button>
+            <div id="ai-dropdown-menu" class="ai-dropdown-menu">
+                <div class="ai-menu-item" data-mode="review">🧐 기획 검토 에이전트</div>
+                <div class="ai-menu-item" data-mode="dev">👨‍💻 개발 에이전트</div>
+                <div class="ai-menu-item" data-mode="json">📄 순수 JSON 복사</div>
+            </div>
+        </div>
+
+        <!-- [Phase 5.4] 프로페셔널 캡처 드롭다운 -->
+        <div class="capture-dropdown-container">
+            <button id="capture-png" class="fab-btn primary" title="Capture PNG">📸</button>
+            <div id="capture-dropdown-menu" class="capture-dropdown-menu">
+                <div class="capture-menu-item" data-mode="transparent">✨ 투명 배경 (PNG)</div>
+                <div class="capture-menu-item" data-mode="white">🖼️ 흰색 배경 (JPG)</div>
+            </div>
+        </div>
+        <div class="separator"></div>
+        <button id="clear-all" class="fab-btn danger" title="Clear All">🗑️</button>
+    </div>
+
+    <!-- 파일 업로드 숨김 인풋 -->
+    <input type="file" id="import-json-input" accept=".json" style="display: none;">
+
+    <!-- 🚨 고화질 캡처를 위해 SVG 호환성이 높은 dom-to-image 사용 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+    <script type="module" src="./main.js"></script>
+</body>
+</html>

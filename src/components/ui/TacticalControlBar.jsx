@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Plus, Target, MousePointer2, Users, Download, Upload, Trash2, X, Undo2, Redo2, Copy, Clipboard, MousePointerSquareDashed, FileText, Zap } from 'lucide-react';
+import { Plus, Target, MousePointer2, Users, Download, Upload, Trash2, X, Undo2, Redo2, Copy, Clipboard, MousePointerSquareDashed, LayoutDashboard } from 'lucide-react';
 import { Panel, useReactFlow } from '@xyflow/react';
 import useStore from '../../store/useStore';
 import './UIControls.css';
@@ -24,8 +24,7 @@ const TacticalControlBar = ({ isToolboxOpen, onOpenDetail }) => {
   const copySelection = useStore((state) => state.copySelection);
   const pasteSelection = useStore((state) => state.pasteSelection);
   const copiedNodes = useStore((state) => state.copiedNodes);
-  
-  const activateCTypePipeline = useStore((state) => state.activateCTypePipeline);
+  const clearTacticalSelection = useStore((state) => state.clearTacticalSelection);
   
   const isLocked = projectList.find(p => p.id === currentProjectId)?.isLocked;
   
@@ -33,6 +32,12 @@ const TacticalControlBar = ({ isToolboxOpen, onOpenDetail }) => {
   const fileInputRef = useRef(null);
 
   const selectedNodeCount = nodes.filter(n => n.selected).length;
+  
+  const toggleMultiSelect = () => {
+    const newMode = !multiSelectMode;
+    setMultiSelectMode(newMode);
+    if (!newMode) clearTacticalSelection();
+  };
   
   const handleAddNodeAtCenter = () => {
     const centerX = window.innerWidth / 2;
@@ -116,34 +121,11 @@ const TacticalControlBar = ({ isToolboxOpen, onOpenDetail }) => {
     setCenter(250, 250, { zoom: 1, duration: 800 });
   };
 
-  const handleAddSummary = () => {
-    const existingSummary = nodes.find(n => n.type === 'summary');
-    
-    if (existingSummary) {
-      // 이미 존재한다면 토글 및 포커스
-      const isCollapsed = existingSummary.data?.collapsed;
-      useStore.setState((state) => ({
-        nodes: state.nodes.map((n) => 
-          n.id === existingSummary.id ? { ...n, data: { ...n.data, collapsed: !isCollapsed } } : n
-        )
-      }));
-      setCenter(existingSummary.position.x + 150, existingSummary.position.y + 100, { zoom: 1.2, duration: 800 });
-    } else {
-      // 존재하지 않는다면 신규 생성
-      const centerX = window.innerWidth / 2;
-      const centerY = window.innerHeight / 2;
-      const position = screenToFlowPosition({ x: centerX, y: centerY });
-      addNode(position, '전략적 대시보드', 'process', 'summary');
-    }
-  };
-
   return (
     <Panel position="bottom-center" className="tactical-control-panel">
       <div className={`tactical-control-bar-wrapper ${isToolboxOpen ? '' : 'closed'}`}>
         <div className="tactical-control-bar">
           
-
-
         <button 
           onClick={handleAddNodeAtCenter}
           disabled={isLocked}
@@ -160,26 +142,31 @@ const TacticalControlBar = ({ isToolboxOpen, onOpenDetail }) => {
         </button>
 
         <button 
-          onClick={handleAddSummary}
+          onClick={() => {
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            const position = screenToFlowPosition({ x: centerX, y: centerY });
+            addNode(position, '전략 대시보드', 'process', 'summary');
+          }}
           disabled={isLocked}
-          className="control-btn-icon"
+          className="control-btn"
           style={{ 
             background: isLocked ? 'rgba(255,255,255,0.05)' : 'rgba(0, 229, 255, 0.1)', 
             color: isLocked ? '#64748b' : '#00e5ff',
-            border: `1px solid ${isLocked ? 'rgba(255,255,255,0.1)' : 'rgba(0, 229, 255, 0.3)'}`,
+            border: '1.5px solid #00e5ff',
             opacity: isLocked ? 0.5 : 1,
             cursor: isLocked ? 'not-allowed' : 'pointer'
           }}
-          title={isLocked ? "잠금 모드에서는 추가할 수 없습니다" : "전략적 대시보드 추가"}
+          title={isLocked ? "잠금 모드에서는 추가할 수 없습니다" : "전략 대시보드 생성"}
         >
-          <Zap size={20} />
+          <LayoutDashboard size={20} /> <span className="btn-text">대시보드</span>
         </button>
 
         <div className="divider"></div>
 
         {/* 편집 편의 도구 */}
         <button 
-          onClick={() => setMultiSelectMode(!multiSelectMode)}
+          onClick={toggleMultiSelect}
           className="control-btn-icon"
           style={{ 
             background: multiSelectMode ? '#00e5ff' : 'rgba(255, 255, 255, 0.05)', 
@@ -252,7 +239,7 @@ const TacticalControlBar = ({ isToolboxOpen, onOpenDetail }) => {
           }}
           title="전술 상세 편집"
         >
-          <FileText size={20} /> <span className="btn-text">상세 계획</span>
+          <Plus size={20} style={{ transform: 'rotate(45deg)' }} /> <span className="btn-text">상세 계획</span>
         </button>
         <button 
           onClick={() => autoLayout('TB')}

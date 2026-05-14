@@ -15,7 +15,7 @@ const AuraGroup = ({ id, data, selected }) => {
   const isCollapsed = data.collapsed;
   const memo = data.memo || '';
 
-  // 📊 하위 노드들의 시트 데이터 합산 계산 (지능형 집계 - 수식 대응)
+  // 📊 하위 노드들의 시트 데이터 합산 계산 (지능형 집계 - 수식 및 중복 합계 방지 적용)
   const groupTotal = React.useMemo(() => {
     const childNodes = nodes.filter(n => n.parentId === id);
     
@@ -23,8 +23,7 @@ const AuraGroup = ({ id, data, selected }) => {
       const sheet = node.data.sheet;
       if (!sheet || !sheet.rows || !sheet.columns) return acc;
       
-      const columns = sheet.columns;
-      const rows = sheet.rows;
+      const { columns, rows } = sheet;
 
       const evalFormula = (formula, row) => {
         if (!formula) return 0;
@@ -40,24 +39,26 @@ const AuraGroup = ({ id, data, selected }) => {
         } catch { return 0; }
       };
 
-      const targetColumn = columns.find(c => 
-        c.name.includes('소계') || 
-        c.name.includes('합계') || 
-        c.name.toLowerCase().includes('total') || 
-        c.name.toLowerCase().includes('amount') ||
-        c.name.toLowerCase().includes('subtotal')
-      ) || columns.filter(c => c.type === 'number' || c.type === 'formula').slice(-1)[0];
-
-      if (!targetColumn) return acc;
-
       const nodeSum = rows.reduce((rAcc, row) => {
-        let val = 0;
-        if (targetColumn.type === 'number') {
-          val = parseFloat(row[targetColumn.id]) || 0;
-        } else if (targetColumn.type === 'formula') {
-          val = evalFormula(targetColumn.formula, row);
+        // 1. 대표 수식/숫자 필드(c4 또는 '계', '합' 포함) 우선 탐색
+        const targetCol = columns.find(c => 
+          (c.type === 'formula' || c.type === 'number') && 
+            (c.id === 'c4' || c.name.includes('계') || c.name.includes('합') || c.name.includes('소계'))
+        );
+
+        if (targetCol) {
+          if (targetCol.type === 'formula') {
+            return rAcc + evalFormula(targetCol.formula, row);
+          } else {
+            return rAcc + (parseFloat(row[targetCol.id]) || 0);
+          }
         }
-        return rAcc + val;
+        
+        // 2. 대표 필드가 없으면 모든 숫자 필드를 합산 (Fallback)
+        return rAcc + columns.reduce((cAcc, col) => {
+          if (col.type === 'number') return cAcc + (parseFloat(row[col.id]) || 0);
+          return cAcc;
+        }, 0);
       }, 0);
 
       return acc + nodeSum;
@@ -219,6 +220,36 @@ const AuraGroup = ({ id, data, selected }) => {
           </button>
         </div>
       </div>
+
+      {/* [v4.6-PLATINUM] 그룹 상세 설명 (Description) 렌더링 영역 */}
+      {!isCollapsed && memo && (
+        <div 
+          className="nodrag nopan"
+          style={{
+            position: 'absolute',
+            top: '60px',
+            left: '20px',
+            right: '20px',
+            bottom: '40px',
+            overflow: 'auto',
+            padding: '10px',
+            background: 'rgba(255, 255, 255, 0.03)',
+            borderRadius: '12px',
+            fontSize: '13px',
+            color: 'rgba(255, 255, 255, 0.8)',
+            lineHeight: '1.6',
+            pointerEvents: 'all'
+          }}
+        >
+          <div 
+            dangerouslySetInnerHTML={{ __html: memo }} 
+            className="group-description-content"
+            style={{
+              fontFamily: 'Inter, sans-serif'
+            }}
+          />
+        </div>
+      )}
 
       {/* 섹터 외부 하단 메모장 (상시 노출) */}
       <div 

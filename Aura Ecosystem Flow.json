@@ -1,0 +1,692 @@
+{
+  "nodes": [
+    {
+      "id": "group-1777271750623",
+      "type": "group",
+      "position": {
+        "x": 649.255758685572,
+        "y": -273.33561283142984
+      },
+      "style": {
+        "width": 869.3564697211012,
+        "height": 615.9263266001378
+      },
+      "data": {
+        "label": "Backend"
+      },
+      "measured": {
+        "width": 869,
+        "height": 616
+      },
+      "selected": false
+    },
+    {
+      "id": "node-1777268952569",
+      "type": "viewer",
+      "position": {
+        "x": 146.84275434778095,
+        "y": -140.1677734009787
+      },
+      "data": {
+        "label": "Nginx",
+        "description": "새로운 전술 노드입니다. 더블클릭하여 수정하세요.",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 290,
+        "height": 79
+      },
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "node-1777269223488",
+      "type": "viewer",
+      "position": {
+        "x": 146.16144710224256,
+        "y": 17.170879585937037
+      },
+      "data": {
+        "label": "Tailscle",
+        "description": "새로운 전술 노드입니다. 더블클릭하여 수정하세요.",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 290,
+        "height": 79
+      },
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "node-1777269328396",
+      "type": "viewer",
+      "position": {
+        "x": -292.9456826415816,
+        "y": -120.59763094903197
+      },
+      "data": {
+        "label": "cloudflare",
+        "description": "새로운 전술 노드입니다. 더블클릭하여 수정하세요.",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 290,
+        "height": 79
+      },
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "node-1777269410247",
+      "type": "viewer",
+      "position": {
+        "x": -336.9014629415617,
+        "y": -464.6652865657986
+      },
+      "data": {
+        "label": "외부사용자",
+        "description": "새로운 전술 노드입니다. 더블클릭하여 수정하세요.",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 290,
+        "height": 79
+      },
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "node-1777269436259",
+      "type": "viewer",
+      "position": {
+        "x": -610.488302960516,
+        "y": 37.03688638578929
+      },
+      "data": {
+        "label": "안티그래비티 & 관리자",
+        "description": "새로운 전술 노드입니다. 더블클릭하여 수정하세요.",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 290,
+        "height": 79
+      },
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "node-1777269471454",
+      "type": "viewer",
+      "position": {
+        "x": 43.92089432792204,
+        "y": 40
+      },
+      "data": {
+        "label": "Aura Hub",
+        "description": "서비스 명칭: Aura Hub\n도커 이미지/ 구분: aura-hub:latest\n내부 매핑 코트: 8080:80\n비고: 시스템 메인 대시보드 (React/Vite)",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 357,
+        "height": 97
+      },
+      "selected": false,
+      "dragging": false,
+      "parentId": "group-1777271750623",
+      "extent": "parent"
+    },
+    {
+      "id": "node-1777269690200",
+      "type": "viewer",
+      "position": {
+        "x": 57.9426920066324,
+        "y": -460.8759949992309
+      },
+      "data": {
+        "label": "외부사용자n",
+        "description": "새로운 전술 노드입니다. 더블클릭하여 수정하세요.",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 290,
+        "height": 79
+      },
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "node-1777270299534",
+      "type": "viewer",
+      "position": {
+        "x": 40,
+        "y": 174.0723232206911
+      },
+      "data": {
+        "label": "Agent Canvas",
+        "description": "서비스 명칭: Agent Canvas\n도커 이미지/ 구분: agent-canvas:latest\n내부 매핑 코트: 8090:80\n비고: AI 플로우차트 통합 뷰어",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 357,
+        "height": 115
+      },
+      "selected": false,
+      "dragging": false,
+      "parentId": "group-1777271750623",
+      "extent": "parent"
+    },
+    {
+      "id": "node-1777270406267",
+      "type": "viewer",
+      "position": {
+        "x": 471.356469721101,
+        "y": 186.57378850073331
+      },
+      "data": {
+        "label": "Aura API",
+        "description": "서비스 명칭: Aura API\n도커 이미지/ 구분: aura-api:latest\n내부 매핑 코트: 3002:3002\n비고: 백엔드 API (Node.js/Prisma)",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 357,
+        "height": 97
+      },
+      "selected": false,
+      "dragging": false,
+      "parentId": "group-1777271750623",
+      "extent": "parent"
+    },
+    {
+      "id": "node-1777270511419",
+      "type": "viewer",
+      "position": {
+        "x": 475.3551132216172,
+        "y": 55.543268747222896
+      },
+      "data": {
+        "label": "Quark DB",
+        "description": "서비스 명칭: Quark DB\n도커 이미지/ 구분: mariadb:10.11\n내부 매핑 코트: 3306:3306\n비고: 통합 데이터베이스",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 357,
+        "height": 97
+      },
+      "selected": false,
+      "dragging": false,
+      "parentId": "group-1777271750623",
+      "extent": "parent"
+    },
+    {
+      "id": "node-1777270530545",
+      "type": "viewer",
+      "position": {
+        "x": 483.05471484584035,
+        "y": -425.647304257824
+      },
+      "data": {
+        "label": "New Agent",
+        "description": "새로운 전술 노드입니다. 더블클릭하여 수정하세요.",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 290,
+        "height": 79
+      },
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "node-1777270724278",
+      "type": "viewer",
+      "position": {
+        "x": 465.776530389065,
+        "y": 318.9263266001379
+      },
+      "data": {
+        "label": "Nginx",
+        "description": "서비스 명칭: Nginx\n도커 이미지/ 구분: 서버 네이티브 (systemd)\n내부 매핑 코트: 80\n비고: 리버스 프록시 라우터 (`/etc/nginx/sites-enabled/aura.conf`)",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 357,
+        "height": 115
+      },
+      "selected": false,
+      "dragging": false,
+      "parentId": "group-1777271750623",
+      "extent": "parent"
+    },
+    {
+      "id": "node-1777270781115",
+      "type": "viewer",
+      "position": {
+        "x": 457.776530389065,
+        "y": 458.9263266001379
+      },
+      "data": {
+        "label": "Cloudflare",
+        "description": "서비스 명칭: Cloudflare\n도커 이미지/ 구분: cloudflared (systemd)\n내부 매핑 코트: -\n비고: 터널 데몬 (백그라운드 자동 실행)",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 357,
+        "height": 115
+      },
+      "selected": false,
+      "dragging": false,
+      "parentId": "group-1777271750623",
+      "extent": "parent"
+    },
+    {
+      "id": "node-1777270890984",
+      "type": "viewer",
+      "position": {
+        "x": 43.54485836173524,
+        "y": 424.9217589141376
+      },
+      "data": {
+        "label": "Linux Terminal",
+        "description": "새로운 전술 노드입니다. 더블클릭하여 수정하세요.",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 290,
+        "height": 79
+      },
+      "selected": false,
+      "dragging": false,
+      "parentId": "group-1777271750623",
+      "extent": "parent"
+    },
+    {
+      "id": "node-1777270951248",
+      "type": "viewer",
+      "position": {
+        "x": 147.1426531035642,
+        "y": 174.32189458036373
+      },
+      "data": {
+        "label": "Github",
+        "description": "새로운 전술 노드입니다. 더블클릭하여 수정하세요.",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 290,
+        "height": 79
+      },
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "node-1777271030666",
+      "type": "viewer",
+      "position": {
+        "x": 43.24114177438901,
+        "y": 318.9086433514565
+      },
+      "data": {
+        "label": "Quick-Buy Manager",
+        "description": "새로운 전술 노드입니다. 더블클릭하여 수정하세요.",
+        "symbolType": "process"
+      },
+      "measured": {
+        "width": 290,
+        "height": 79
+      },
+      "selected": false,
+      "dragging": false,
+      "parentId": "group-1777271750623",
+      "extent": "parent"
+    }
+  ],
+  "edges": [
+    {
+      "source": "node-1777269328396",
+      "target": "node-1777268952569",
+      "animated": true,
+      "style": {
+        "stroke": "var(--neon-blue)",
+        "strokeWidth": 2
+      },
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 15,
+        "height": 15,
+        "color": "var(--neon-blue)"
+      },
+      "id": "xy-edge__node-1777269328396-node-1777268952569",
+      "selected": false
+    },
+    {
+      "source": "node-1777269410247",
+      "target": "node-1777269328396",
+      "animated": true,
+      "style": {
+        "stroke": "var(--neon-blue)",
+        "strokeWidth": 2
+      },
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 15,
+        "height": 15,
+        "color": "var(--neon-blue)"
+      },
+      "id": "xy-edge__node-1777269410247-node-1777269328396",
+      "selected": false,
+      "label": "World Wide Web",
+      "labelStyle": {
+        "fill": "#e2e8f0",
+        "fontWeight": "bold",
+        "fontSize": 12
+      },
+      "labelBgStyle": {
+        "fill": "rgba(30, 41, 59, 0.95)",
+        "stroke": "#00e5ff",
+        "strokeWidth": 1.5
+      },
+      "labelBgPadding": [
+        8,
+        4
+      ],
+      "labelBgBorderRadius": 4
+    },
+    {
+      "source": "node-1777269436259",
+      "target": "node-1777269223488",
+      "animated": true,
+      "style": {
+        "stroke": "var(--neon-blue)",
+        "strokeWidth": 2
+      },
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 15,
+        "height": 15,
+        "color": "var(--neon-blue)"
+      },
+      "id": "xy-edge__node-1777269436259-node-1777269223488",
+      "selected": false,
+      "label": "VPN",
+      "labelStyle": {
+        "fill": "#e2e8f0",
+        "fontWeight": "bold",
+        "fontSize": 12
+      },
+      "labelBgStyle": {
+        "fill": "rgba(30, 41, 59, 0.95)",
+        "stroke": "#00e5ff",
+        "strokeWidth": 1.5
+      },
+      "labelBgPadding": [
+        8,
+        4
+      ],
+      "labelBgBorderRadius": 4
+    },
+    {
+      "source": "node-1777269690200",
+      "target": "node-1777269328396",
+      "animated": true,
+      "style": {
+        "stroke": "var(--neon-blue)",
+        "strokeWidth": 2
+      },
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 15,
+        "height": 15,
+        "color": "var(--neon-blue)"
+      },
+      "id": "xy-edge__node-1777269690200-node-1777269328396",
+      "selected": false,
+      "label": "https://philmong.co.kr/",
+      "labelStyle": {
+        "fill": "#e2e8f0",
+        "fontWeight": "bold",
+        "fontSize": 12
+      },
+      "labelBgStyle": {
+        "fill": "rgba(30, 41, 59, 0.95)",
+        "stroke": "#00e5ff",
+        "strokeWidth": 1.5
+      },
+      "labelBgPadding": [
+        8,
+        4
+      ],
+      "labelBgBorderRadius": 4
+    },
+    {
+      "source": "node-1777269436259",
+      "target": "node-1777270951248",
+      "animated": true,
+      "style": {
+        "stroke": "var(--neon-blue)",
+        "strokeWidth": 2
+      },
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 15,
+        "height": 15,
+        "color": "var(--neon-blue)"
+      },
+      "id": "xy-edge__node-1777269436259-node-1777270951248",
+      "selected": false
+    },
+    {
+      "source": "node-1777270951248",
+      "target": "node-1777270299534",
+      "animated": true,
+      "style": {
+        "stroke": "var(--neon-blue)",
+        "strokeWidth": 2
+      },
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 15,
+        "height": 15,
+        "color": "var(--neon-blue)"
+      },
+      "id": "xy-edge__node-1777270951248-node-1777270299534",
+      "selected": false,
+      "label": "Push",
+      "labelStyle": {
+        "fill": "#e2e8f0",
+        "fontWeight": "bold",
+        "fontSize": 12
+      },
+      "labelBgStyle": {
+        "fill": "rgba(30, 41, 59, 0.95)",
+        "stroke": "#00e5ff",
+        "strokeWidth": 1.5
+      },
+      "labelBgPadding": [
+        8,
+        4
+      ],
+      "labelBgBorderRadius": 4
+    },
+    {
+      "source": "node-1777270951248",
+      "target": "node-1777269471454",
+      "animated": true,
+      "style": {
+        "stroke": "var(--neon-blue)",
+        "strokeWidth": 2
+      },
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 15,
+        "height": 15,
+        "color": "var(--neon-blue)"
+      },
+      "id": "xy-edge__node-1777270951248-node-1777269471454",
+      "selected": false,
+      "label": "Push",
+      "labelStyle": {
+        "fill": "#e2e8f0",
+        "fontWeight": "bold",
+        "fontSize": 12
+      },
+      "labelBgStyle": {
+        "fill": "rgba(30, 41, 59, 0.95)",
+        "stroke": "#00e5ff",
+        "strokeWidth": 1.5
+      },
+      "labelBgPadding": [
+        8,
+        4
+      ],
+      "labelBgBorderRadius": 4
+    },
+    {
+      "source": "node-1777270951248",
+      "target": "node-1777271030666",
+      "animated": true,
+      "style": {
+        "stroke": "var(--neon-blue)",
+        "strokeWidth": 2
+      },
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 15,
+        "height": 15,
+        "color": "var(--neon-blue)"
+      },
+      "id": "xy-edge__node-1777270951248-node-1777271030666",
+      "selected": false,
+      "label": "",
+      "labelStyle": {
+        "fill": "#e2e8f0",
+        "fontWeight": "bold",
+        "fontSize": 12
+      },
+      "labelBgStyle": {
+        "fill": "rgba(30, 41, 59, 0.95)",
+        "stroke": "#00e5ff",
+        "strokeWidth": 1.5
+      },
+      "labelBgPadding": [
+        8,
+        4
+      ],
+      "labelBgBorderRadius": 4
+    },
+    {
+      "source": "node-1777268952569",
+      "target": "node-1777269471454",
+      "animated": true,
+      "style": {
+        "stroke": "var(--neon-blue)",
+        "strokeWidth": 2
+      },
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 15,
+        "height": 15,
+        "color": "var(--neon-blue)"
+      },
+      "id": "xy-edge__node-1777268952569-node-1777269471454",
+      "selected": false,
+      "label": "Client",
+      "labelStyle": {
+        "fill": "#e2e8f0",
+        "fontWeight": "bold",
+        "fontSize": 12
+      },
+      "labelBgStyle": {
+        "fill": "rgba(30, 41, 59, 0.95)",
+        "stroke": "#00e5ff",
+        "strokeWidth": 1.5
+      },
+      "labelBgPadding": [
+        8,
+        4
+      ],
+      "labelBgBorderRadius": 4
+    },
+    {
+      "source": "node-1777269223488",
+      "target": "node-1777270890984",
+      "animated": true,
+      "style": {
+        "stroke": "var(--neon-blue)",
+        "strokeWidth": 2
+      },
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 15,
+        "height": 15,
+        "color": "var(--neon-blue)"
+      },
+      "id": "xy-edge__node-1777269223488-node-1777270890984",
+      "selected": false,
+      "label": "SSH",
+      "labelStyle": {
+        "fill": "#e2e8f0",
+        "fontWeight": "bold",
+        "fontSize": 12
+      },
+      "labelBgStyle": {
+        "fill": "rgba(30, 41, 59, 0.95)",
+        "stroke": "#00e5ff",
+        "strokeWidth": 1.5
+      },
+      "labelBgPadding": [
+        8,
+        4
+      ],
+      "labelBgBorderRadius": 4
+    },
+    {
+      "source": "node-1777269471454",
+      "target": "node-1777270511419",
+      "animated": true,
+      "style": {
+        "stroke": "var(--neon-blue)",
+        "strokeWidth": 2
+      },
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 15,
+        "height": 15,
+        "color": "var(--neon-blue)"
+      },
+      "id": "xy-edge__node-1777269471454-node-1777270511419"
+    },
+    {
+      "source": "node-1777270299534",
+      "target": "node-1777270511419",
+      "animated": true,
+      "style": {
+        "stroke": "var(--neon-blue)",
+        "strokeWidth": 2
+      },
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 15,
+        "height": 15,
+        "color": "var(--neon-blue)"
+      },
+      "id": "xy-edge__node-1777270299534-node-1777270511419"
+    },
+    {
+      "source": "node-1777271030666",
+      "target": "node-1777270511419",
+      "animated": true,
+      "style": {
+        "stroke": "var(--neon-blue)",
+        "strokeWidth": 2
+      },
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 15,
+        "height": 15,
+        "color": "var(--neon-blue)"
+      },
+      "id": "xy-edge__node-1777271030666-node-1777270511419"
+    }
+  ]
+}

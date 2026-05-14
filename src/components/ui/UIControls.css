@@ -141,20 +141,114 @@
   }
 }
 
-/* 글로벌 드롭다운(select) 및 옵션 가시성 보정 */
-select {
-  cursor: pointer;
-  color-scheme: dark; /* 브라우저 기본 UI를 다크 테마로 유도 */
+/* ==========================================
+   🏆 v4.6-PLATINUM: 통합 전술 모달 & 탭 스타일
+   ========================================== */
+.node-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(2, 6, 23, 0.85);
+  backdrop-filter: blur(15px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: modal-fade-in 0.3s ease-out;
 }
 
-select option {
-  background-color: #1e293b; /* 어두운 배경 (Slate 800) */
-  color: #ffffff;           /* 흰색 글자 */
+.node-modal-content {
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.node-modal-content.full-width {
+  border-radius: 0;
+  height: 98vh !important;
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.icon-button-v2 {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
   padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
-/* 일부 브라우저 호환성을 위한 추가 보정 */
-select:focus option {
-  color: #ffffff;
-  background-color: #334155;
+.icon-button-v2:hover {
+  background: rgba(0, 229, 255, 0.1);
+  border-color: #00e5ff;
+  color: #00e5ff;
+}
+
+.icon-button-v2.close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.footer-button {
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  transition: all 0.2s;
+}
+
+.footer-button.primary {
+  background: linear-gradient(135deg, #00e5ff 0%, #0096ff 100%);
+  color: #020617;
+  box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
+}
+
+.footer-button.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 229, 255, 0.5);
+}
+
+.footer-button.secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-button.danger {
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.footer-button.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* 🌊 Aura Ecosystem Animations */
+@keyframes aura-flow {
+  0% { stroke-dashoffset: 200px; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes aura-pulse {
+  0% { stroke-opacity: 0.4; filter: brightness(1); }
+  50% { stroke-opacity: 1; filter: brightness(1.5); }
+  100% { stroke-opacity: 0.4; filter: brightness(1); }
 }

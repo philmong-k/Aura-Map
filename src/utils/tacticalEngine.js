@@ -116,8 +116,30 @@ export const migrateEdges = (edges, migratedNodes) => {
     const targetNode = migratedNodes.find(n => n.id === edge.target);
     const isDataLink = sourceNode?.data?.shape === 'database' || targetNode?.data?.shape === 'database';
 
+    // 🛡️ [v4.6-PLATINUM] 전술 유선망 규격(Tactical Wiring Standard) 강제 적용
+    let sourceHandle = edge.sourceHandle;
+    let targetHandle = edge.targetHandle;
+
+    // 핸들 ID 자동 보정 (Legacy -> Tactical Standard)
+    const standardizeHandle = (h, prefix) => {
+      if (!h) return h;
+      if (h.startsWith('s-') || h.startsWith('t-')) return h; // 이미 규격 준수 중
+      
+      if (h.includes('bottom') || h === 'bottom-2') return `${prefix}-bottom`;
+      if (h.includes('top') || h === 'top-2') return `${prefix}-top`;
+      if (h.includes('left') || h === 'left-2') return `${prefix}-left`;
+      if (h.includes('right') || h === 'right-2') return `${prefix}-right`;
+      
+      return h;
+    };
+
+    sourceHandle = standardizeHandle(sourceHandle, 's');
+    targetHandle = standardizeHandle(targetHandle, 't');
+
     return {
       ...edge,
+      sourceHandle,
+      targetHandle,
       type: 'tactical',
       animated: true,
       style: {
