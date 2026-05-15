@@ -23,21 +23,28 @@ const loadProjectData = (id) => {
 };
 
 const initialList = getProjectList();
-const lastProjectId = localStorage.getItem('aura-map-last-project-id');
-const lastProject = lastProjectId ? loadProjectData(lastProjectId) : null;
+const lastProjectId = localStorage.getItem('aura-map-last-project-id') || 'default';
+
+// 🛡️ [Self-Healing] 만약 프로젝트 목록이 비어있고 기본 데이터가 존재한다면 목록에 추가
+if (initialList.length === 0) {
+  const defaultProject = { 
+    id: 'default', 
+    name: '기본 프로젝트', 
+    lastModified: new Date().toISOString(), 
+    isLocked: false 
+  };
+  initialList.push(defaultProject);
+  localStorage.setItem(LIST_KEY, JSON.stringify(initialList));
+}
+
+const lastProject = loadProjectData(lastProjectId);
 
 const useStore = create((set, get) => ({
-  nodes: lastProject?.nodes || [
-    {
-      id: 'root-1',
-      type: 'tactical',
-      position: { x: 250, y: 250 },
-      data: { label: '🚀 작전 시작', shape: 'terminal' }
-    }
-  ],
-  edges: lastProject?.edges || [],
+  isLoading: false,
+  nodes: [],
+  edges: [],
   currentProjectId: lastProjectId || 'default',
-  currentProjectName: initialList.find(p => p.id === lastProjectId)?.name || '기본 프로젝트',
+  currentProjectName: '연결 중...',
   projectList: initialList,
   
   // [v4.6-PLATINUM] 상세 창 관리 상태
@@ -162,34 +169,20 @@ const useStore = create((set, get) => ({
       const { nodes, edges, currentProjectId, projectList, syncToBackend } = get();
       if (!currentProjectId) return;
 
+      const lastModified = new Date().toISOString();
       const projectInfo = projectList.find(p => p.id === currentProjectId);
       const isLocked = projectInfo?.isLocked || false;
 
-      // 1. 개별 프로젝트 데이터 저장 (타임스탬프 포함 및 데이터 안전 복제)
-      const lastModified = new Date().toISOString();
-      const nodesCopy = JSON.parse(JSON.stringify(nodes));
-      
-      // [감시 센서 1] 로컬 저장 데이터 검증
-      const totalRows = nodesCopy.reduce((acc, node) => acc + (node.data?.sheet?.rows?.length || 0), 0);
-      console.log(`🛡️ [Step 1] 로컬 금고 저장 시도: 노드 ${nodesCopy.length}개, 총 장부 행 ${totalRows}개`);
-
-      const projectData = JSON.stringify({ 
-        nodes: nodesCopy,
-        edges: JSON.parse(JSON.stringify(edges)),
-        isLocked,
-        lastModified 
-      });
-      
-      localStorage.setItem(`${STORAGE_KEY}-${currentProjectId}`, projectData);
+      // 1. 개별 프로젝트 데이터 저장 (로컬 저장소 임시 비활성화 - 지휘관 명령)
+      // localStorage.setItem(`${STORAGE_KEY}-${currentProjectId}`, projectData);
       localStorage.setItem('aura-map-last-project-id', currentProjectId);
       
-      // 2. 목록 업데이트
-      const list = getProjectList();
+      // 2. 목록 업데이트 (메모리 내 상태만 유지)
+      const list = get().projectList;
       const existingIndex = list.findIndex(p => p.id === currentProjectId);
       if (existingIndex > -1) {
         list[existingIndex].lastModified = lastModified;
-        localStorage.setItem(LIST_KEY, JSON.stringify(list));
-        set({ projectList: list });
+        set({ projectList: [...list] });
       }
 
       // 3. 백엔드 동기화 (즉시 혹은 지연)
@@ -228,8 +221,8 @@ const useStore = create((set, get) => ({
       return;
     }
 
-    const BACKEND_URL = import.meta.env.VITE_QUARK_CORE_URL ?? null;
-    if (!BACKEND_URL) return;
+    const BACKEND_URL = import.meta.env.VITE_QUARK_CORE_URL;
+    if (BACKEND_URL === undefined || BACKEND_URL === null) return;
 
     const projectInfo = projectList.find(p => p.id === targetId);
     if (!projectInfo) return;
@@ -249,15 +242,18 @@ const useStore = create((set, get) => ({
       syncName = projectInfo.name;
     }
 
-    console.log(`📡 [Sync] '${syncName}' 작전 데이터 전송 중... (노드: ${syncNodes.length}개)`);
+    console.log(`📡 [Sync] '${syncName}' (${targetId}) 작전 데이터 전송 중... (노드: ${syncNodes.length}개)`);
 
     try {
-      await fetch(`${BACKEND_URL}/api/tactical/sync`, {
+      const userToken = localStorage.getItem('aura_token');
+      const authHeader = userToken ? `Bearer ${userToken}` : `Bearer ${import.meta.env.VITE_TACTICAL_API_KEY}`;
+
+      const response = await fetch(`${BACKEND_URL}/api/tactical/sync`, {
         method: 'POST',
         mode: 'cors',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_TACTICAL_API_KEY}`,
+          'Authorization': authHeader,
           'X-Device-Id': navigator.userAgent
         },
         body: JSON.stringify({
@@ -272,7 +268,10 @@ const useStore = create((set, get) => ({
           lastModified: new Date().toISOString()
         })
       });
-      console.log(`✅ [Sync] 백엔드 동기화 성공: ${syncName}`);
+
+      if (response.ok) {
+        console.log(`✅ [Sync] 백엔드 동기화 성공: ${syncName}`);
+      }
     } catch (error) {
       console.warn('⚠️ [Sync] 통신 오류:', error.message);
     }
@@ -297,33 +296,30 @@ const useStore = create((set, get) => ({
   },
 
   // 백엔드에서 모든 데이터 불러오기
-  loadFromBackend: async () => {
+  loadFromBackend: async (options = { force: false }) => {
+    if (!options.force) set({ isLoading: true });
     const BACKEND_URL = import.meta.env.VITE_QUARK_CORE_URL ?? null;
     if (BACKEND_URL === null || BACKEND_URL === undefined) return;
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/tactical/load`, {
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_TACTICAL_API_KEY}`
-        }
+      const userToken = localStorage.getItem('aura_token');
+      const authHeader = userToken ? `Bearer ${userToken}` : `Bearer ${import.meta.env.VITE_TACTICAL_API_KEY}`;
+
+      let response = await fetch(`${BACKEND_URL}/api/tactical/load`, {
+        headers: { 'Authorization': authHeader }
       });
 
       if (!response.ok) throw new Error('데이터 불러오기 실패');
       
       const remoteProjects = await response.json();
       if (remoteProjects.length > 0) {
-        // 1. 프로젝트 목록 업데이트
         const localList = getProjectList();
         const mergedList = [...localList];
 
         remoteProjects.forEach(remote => {
           const index = mergedList.findIndex(p => p.id === remote.id);
           const remoteName = remote.name || '알 수 없는 작전';
-
-          // 데이터 파싱 (문자열로 올 경우 대비)
           const remoteData = typeof remote.data === 'string' ? JSON.parse(remote.data) : remote.data;
-          const remoteIsLocked = remoteData?.isLocked || false;
-          const remoteIsPinned = remoteData?.isPinned || false;
 
           if (index === -1) {
             mergedList.push({ 
@@ -331,45 +327,28 @@ const useStore = create((set, get) => ({
               name: remoteName, 
               lastModified: remote.lastModified, 
               isRemote: true,
-              isLocked: remoteIsLocked,
-              isPinned: remoteIsPinned
+              isLocked: remoteData?.isLocked || false,
+              isPinned: remoteData?.isPinned || false
             });
           } else {
-            // 불변성을 유지하며 객체 업데이트
             mergedList[index] = {
               ...mergedList[index],
+              name: remoteName, // 이름 동기화 강제
               lastModified: remote.lastModified,
               isRemote: true,
-              isLocked: remoteIsLocked,
-              isPinned: remoteIsPinned
+              isLocked: remoteData?.isLocked || false,
+              isPinned: remoteData?.isPinned || false
             };
-            
-            // 이름 동기화 (기본값일 경우만)
-            if (mergedList[index].name === 'default' || mergedList[index].name === '기본 작전' || mergedList[index].name === '새 전술 계획') {
-              if (remoteName !== 'default' && remoteName !== '기본 작전') {
-                mergedList[index].name = remoteName;
-              }
-            }
           }
-          // 개별 프로젝트 데이터 캐싱 (타임스탬프 보존 필수)
-          const finalRemoteData = {
-            ...remoteData,
-            lastModified: remote.lastModified
-          };
-          localStorage.setItem(`${STORAGE_KEY}-${remote.id}`, JSON.stringify(finalRemoteData));
+          localStorage.setItem(`${STORAGE_KEY}-${remote.id}`, JSON.stringify({ ...remoteData, lastModified: remote.lastModified }));
         });
 
-        // 3. 유령 프로젝트 정리 (서버에는 없는데 로컬 리스트에는 'isRemote'로 표시된 것들 삭제)
         const remoteIds = remoteProjects.map(p => p.id);
-        const finalList = mergedList.filter(p => {
-          // 서버에서 가져온 것이 아니거나(순수 로컬), 서버 목록에 현재 존재하는 경우만 유지
-          return !p.isRemote || remoteIds.includes(p.id);
-        });
-
+        const finalList = mergedList.filter(p => !p.isRemote || remoteIds.includes(p.id));
         localStorage.setItem(LIST_KEY, JSON.stringify(finalList));
         set({ projectList: finalList });
 
-        // 4. 만약 현재 활성화된 프로젝트가 백엔드에 있다면 최신화 (타임스탬프 비교 도입)
+        // 현재 활성화된 프로젝트 최신화
         const { currentProjectId, nodes: localNodes } = get();
         const currentRemote = remoteProjects.find(p => p.id === currentProjectId);
         
@@ -378,38 +357,24 @@ const useStore = create((set, get) => ({
           const remoteTime = new Date(currentRemote.lastModified).getTime();
           const localTime = localData?.lastModified ? new Date(localData.lastModified).getTime() : 0;
 
-          // 서버 데이터가 로컬보다 최신일 때만 갱신 검토
-          if (remoteTime > localTime) {
+          if (options.force || remoteTime > localTime) {
             const remoteData = typeof currentRemote.data === 'string' ? JSON.parse(currentRemote.data) : currentRemote.data;
-            const remoteNodes = remoteData.nodes || [];
-            
-            // [정밀 검사] 서버 데이터에 장부 정보가 있는지 확인
-            const remoteHasSheet = remoteNodes.some(n => n.data?.sheet && n.data.sheet.rows?.length > 0);
-            const localHasSheet = localNodes.some(n => n.data?.sheet && n.data.sheet.rows?.length > 0);
-
-            // 서버 데이터가 로컬보다 부실하다면(장부가 증발했다면) 덮어쓰기 거부
-            if (localHasSheet && !remoteHasSheet) {
-              console.warn(`⚠️ [${currentProjectId}] 서버 데이터의 무결성이 의심됩니다 (장부 누락). 로컬 데이터를 보호합니다.`);
-              return;
-            }
-
-            // 🛡️ [v4.6-PLATINUM] 전술 규격 엔진 통과 (Sovereignty Validation)
-            const standardizedNodes = migrateNodes(remoteNodes);
+            const standardizedNodes = migrateNodes(remoteData.nodes || []);
             const standardizedEdges = migrateEdges(remoteData.edges || [], standardizedNodes);
 
             set({
               nodes: standardizedNodes,
-              edges: standardizedEdges
+              edges: standardizedEdges,
+              currentProjectName: currentRemote.name // 이름 즉시 반영
             });
-            console.log(`📡 [${currentProjectId}] 서버 데이터가 최신이며 무결함이 확인되어 갱신했습니다.`);
-          } else {
-            console.log(`🛡️ [${currentProjectId}] 로컬 데이터가 최신이므로 서버 데이터를 무시합니다.`);
+            console.log(`📡 [${currentProjectId}] ${options.force ? '강제' : '서버'} 최신화 완료.`);
           }
         }
-        console.log('✅ 백엔드 전술 데이터 동기화 완료');
       }
     } catch (error) {
       console.warn('⚠️ 백엔드 로드 실패:', error.message);
+    } finally {
+      set({ isLoading: false });
     }
   },
 

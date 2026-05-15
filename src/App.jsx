@@ -75,8 +75,25 @@ const FlowCanvas = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  React.useEffect(() => {
-    loadFromBackend();
+  // 🛡️ [v4.7.0-PLATINUM] 실시간 전술 동기화 엔진 (Auto-Sync Engine)
+  useEffect(() => {
+    // 1. 주기적 폴링 (60초 간격)
+    const syncInterval = setInterval(() => {
+      console.log('🔄 [Auto-Sync] 정기 데이터 대조 중...');
+      loadFromBackend({ force: false });
+    }, 60000);
+
+    // 2. 윈도우 포커스 감지 (화면 전환 시 즉시 동기화)
+    const handleFocus = () => {
+      console.log('✨ [Auto-Sync] 윈도우 포커스 감지: 최신 데이터 수신 시도');
+      loadFromBackend({ force: false });
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(syncInterval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [loadFromBackend]);
 
   // 키보드 단축키 처리 (Undo/Redo)

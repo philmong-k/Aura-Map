@@ -24,7 +24,7 @@ const ProjectLibrarySidebar = ({ showLibrary, setShowLibrary }) => {
   const handleRefresh = async (e) => {
     e.stopPropagation();
     setIsRefreshing(true);
-    await loadFromBackend();
+    await loadFromBackend({ force: true });
     setTimeout(() => setIsRefreshing(false), 800); // 심미적 회전 효과
   };
 

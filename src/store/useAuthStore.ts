@@ -28,15 +28,36 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => {
+  // [인증 통합] URL에 토큰이 포함되어 오면 즉시 저장 (Aura Hub 연동용)
+  const urlParams = new URLSearchParams(window.location.search);
+  const tokenFromUrl = urlParams.get('token');
+  if (tokenFromUrl) {
+    localStorage.setItem('aura_token', tokenFromUrl);
+    // URL에서 토큰 제거 (심미적 및 보안 목적)
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, newUrl);
+  }
+
   const initialToken = localStorage.getItem('aura_token');
-  const initialUser = JSON.parse(localStorage.getItem('aura_user') || 'null');
+  let initialUser = JSON.parse(localStorage.getItem('aura_user') || 'null');
   
-  // 초기 로드 시 토큰이 있으면 권한 동기화 (보안 강화)
-  if (initialToken && initialUser) {
+  // [보안 및 정합성] 토큰은 있는데 유저 정보가 없거나, 그 반대인 경우 초기화
+  if (initialToken && !initialUser) {
     const payload = decodeJWT(initialToken);
-    if (payload && payload.permissions) {
-      initialUser.permissions = payload.permissions;
+    if (payload) {
+      initialUser = { 
+        email: payload.email, 
+        name: payload.name, 
+        role: payload.role,
+        permissions: payload.permissions || [] 
+      };
+      localStorage.setItem('aura_user', JSON.stringify(initialUser));
+    } else {
+      localStorage.removeItem('aura_token');
     }
+  } else if (!initialToken && initialUser) {
+    localStorage.removeItem('aura_user');
+    initialUser = null;
   }
 
   return {

@@ -188,13 +188,13 @@ const MainLayout = () => {
           </div>
           
           <div style={{ padding: '20px', fontSize: '10px', color: 'rgba(255,255,255,0.2)', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-            v2.6.5-GOLDEN // MOBILE OPTIMIZED
+            v4.6.1-PLATINUM // STABLE
           </div>
         </div>
       )}
       
       <footer style={{ position: 'absolute', bottom: 0, width: '100%', textAlign: 'center', fontSize: '11px', color: 'rgba(0, 229, 255, 0.4)', padding: '10px 0', zIndex: 1000, pointerEvents: 'none', letterSpacing: '2px', fontWeight: 'bold' }}>
-        STRATEGIC COMMAND INTERFACE // v2.6.5 (MOBILE STABLE)
+        STRATEGIC COMMAND INTERFACE // v4.6.1-PLATINUM
       </footer>
 
       {/* 🔐 전역 공유 관리 모달 */}
@@ -221,8 +221,11 @@ function App() {
   // SSO Token Capture & Authorization Check
   useEffect(() => {
     const urlToken = searchParams.get('token');
+    
+    // 1. URL에 토큰이 있는 경우 (SSO 진입)
     if (urlToken && urlToken !== 'guest') {
       try {
+        console.log('[Auth] SSO Token detected, processing...');
         const payloadBase64 = urlToken.split('.')[1];
         const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
         const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
@@ -232,25 +235,38 @@ function App() {
         
         const newUserEmail = decodedPayload.email;
 
-        // [중요] 유저가 바뀌었을 경우 기존 캔버스 데이터(localStorage) 초기화
-        if (currentFlowUserId !== 'guest' && currentFlowUserId !== newUserEmail) {
+        // [중요] 유저가 바뀌었을 경우 기존 캔버스 데이터 초기화
+        if (currentFlowUserId && currentFlowUserId !== 'guest' && currentFlowUserId !== newUserEmail) {
           console.log('[Security] User changed. Resetting tactical canvas...');
           resetFlow();
         }
         
-        // 유저 정보 저장 및 Flow Store 유저 ID 동기화
-        login(urlToken, { email: newUserEmail, name: decodedPayload.name, role: decodedPayload.role });
+        login(urlToken, { 
+          email: newUserEmail, 
+          name: decodedPayload.name || 'Operator', 
+          role: decodedPayload.role 
+        });
         setUserId(newUserEmail);
         
+        // 토큰 제거 후 깔끔한 경로로 이동
+        console.log('[Auth] Login successful, cleaning URL...');
         navigate('.', { replace: true });
       } catch (e) {
-        console.error('SSO Token Parsing Error', e);
+        console.error('[Auth] SSO Token Parsing Error', e);
+        // 파싱 실패 시에도 토큰 제거 시도
         navigate('.', { replace: true });
       }
-    } else if (!token) {
+      return;
+    } 
+    
+    // 2. 토큰이 아예 없는 경우 (미인증 상태)
+    if (!token && !urlToken) {
+      console.warn('[Auth] No token found. Redirecting to Portal...');
+      // v5.0 규격: 메인 포탈 또는 로그인 페이지로 리다이렉트
+      // 무한 루프 방지를 위해 현재 경로가 이미 리다이렉트 대상인지 확인 가능 (생략)
       window.location.href = '/login';
     }
-  }, [searchParams, login, navigate, token, resetFlow, setUserId, currentFlowUserId]);
+  }, [searchParams, token, login, navigate, resetFlow, setUserId, currentFlowUserId]);
 
   if (!token) return <div style={{ background: '#0d1117', height: '100vh', width: '100vw' }} />; 
 

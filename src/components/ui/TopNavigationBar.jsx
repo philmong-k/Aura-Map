@@ -15,15 +15,17 @@ const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToo
     setIsRenaming(false);
   };
 
+  const isMobile = window.innerWidth <= 768;
+
   return (
-    <div className="top-nav-bar">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+    <div className="top-nav-bar" style={{ padding: isMobile ? '0 10px' : '0 20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '15px', flex: 1, overflow: 'hidden' }}>
         <button 
           onClick={() => window.location.href = '/'}
           style={{ background: 'transparent', border: 'none', color: '#00e5ff', cursor: 'pointer', display: 'flex', padding: 0 }}
           title="Aura Hub 메인으로 복귀"
         >
-          <Home size={18} />
+          <Home size={isMobile ? 16 : 18} />
         </button>
         
         <div className="divider" style={{ height: '15px' }}></div>
@@ -39,10 +41,10 @@ const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToo
               background: 'transparent',
               border: 'none',
               color: '#00e5ff',
-              fontSize: '16px',
+              fontSize: isMobile ? '14px' : '16px',
               fontWeight: '900',
               outline: 'none',
-              width: '150px'
+              width: isMobile ? '100px' : '150px'
             }}
           />
         ) : (
@@ -51,19 +53,23 @@ const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToo
             style={{ 
               color: '#00e5ff', 
               margin: 0, 
-              fontSize: '16px', 
+              fontSize: isMobile ? '13px' : '16px', 
               fontWeight: '900', 
               letterSpacing: '0.5px',
-              cursor: 'text'
+              cursor: 'text',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: isMobile ? '80px' : 'none'
             }}
           >
             {currentProjectName}
           </h2>
         )}
 
-        {/* 환경 식별 배지 */}
+        {/* 환경 식별 배지 (모바일에서는 도메인 숨김) */}
         <div style={{
-          padding: '2px 8px',
+          padding: '2px 6px',
           background: 'rgba(15, 23, 42, 0.5)',
           border: `1px solid ${window.location.hostname.includes('dev') || window.location.hostname === 'localhost' ? '#0A84FF' : '#30D158'}`,
           borderRadius: '4px',
@@ -73,26 +79,22 @@ const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToo
           boxShadow: `0 0 10px ${window.location.hostname.includes('dev') || window.location.hostname === 'localhost' ? 'rgba(10, 132, 255, 0.3)' : 'rgba(48, 209, 88, 0.3)'}`
         }}>
           <div style={{
-            width: '6px',
-            height: '6px',
+            width: '4px',
+            height: '4px',
             borderRadius: '50%',
             background: window.location.hostname.includes('dev') || window.location.hostname === 'localhost' ? '#0A84FF' : '#30D158',
-            boxShadow: `0 0 5px ${window.location.hostname.includes('dev') || window.location.hostname === 'localhost' ? '#0A84FF' : '#30D158'}`
           }} />
           <span style={{
             color: window.location.hostname.includes('dev') || window.location.hostname === 'localhost' ? '#0A84FF' : '#30D158',
-            fontSize: '10px',
+            fontSize: '9px',
             fontWeight: '900',
-            fontFamily: 'monospace',
-            letterSpacing: '1px'
+            fontFamily: 'monospace'
           }}>
-            {window.innerWidth <= 1024 
-              ? (window.location.hostname.includes('dev') || window.location.hostname === 'localhost' ? 'DEV' : 'LIVE') 
-              : (window.location.hostname.includes('dev') || window.location.hostname === 'localhost' ? `DEV: ${window.location.hostname}` : `LIVE: ${window.location.hostname}`)}
+            {window.location.hostname.includes('dev') || window.location.hostname === 'localhost' ? 'DEV' : 'LIVE'}
           </span>
         </div>
 
-        {/* 🏆 v4.6-PLATINUM 버전 배지 */}
+        {/* 🏆 v4.7.0-PLATINUM 버전 배지 */}
         <div style={{
           padding: '2px 8px',
           background: 'linear-gradient(135deg, rgba(0, 229, 255, 0.2) 0%, rgba(0, 150, 255, 0.2) 100%)',
@@ -106,32 +108,34 @@ const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToo
             fontWeight: '900',
             letterSpacing: '0.5px'
           }}>
-            v4.6-PLATINUM
+            v4.7.0-PLATINUM
           </span>
         </div>
 
-        {/* [v4.6-PLATINUM] 스토리지 용량 모니터링 (이미지 도입 대비) */}
-        <div style={{
-          padding: '2px 10px',
-          background: 'rgba(255, 255, 255, 0.05)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '4px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}>
-          <span style={{ fontSize: '9px', fontWeight: '900', color: '#64748b' }}>STORAGE</span>
-          <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ 
-              width: `${Math.min(100, (JSON.stringify(localStorage).length / (5 * 1024 * 1024) * 100))}%`, 
-              height: '100%', 
-              background: (JSON.stringify(localStorage).length / (5 * 1024 * 1024)) > 0.8 ? '#ef4444' : '#00e5ff' 
-            }} />
+        {/* [v4.6-PLATINUM] 스토리지 용량 모니터링 (모바일에서는 숨김) */}
+        {!isMobile && (
+          <div style={{
+            padding: '2px 10px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}>
+            <span style={{ fontSize: '9px', fontWeight: '900', color: '#64748b' }}>STORAGE</span>
+            <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+              <div style={{ 
+                width: `${Math.min(100, (JSON.stringify(localStorage).length / (5 * 1024 * 1024) * 100))}%`, 
+                height: '100%', 
+                background: (JSON.stringify(localStorage).length / (5 * 1024 * 1024)) > 0.8 ? '#ef4444' : '#00e5ff' 
+              }} />
+            </div>
+            <span style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', fontFamily: 'monospace' }}>
+              {(JSON.stringify(localStorage).length / (5 * 1024 * 1024) * 100).toFixed(1)}%
+            </span>
           </div>
-          <span style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', fontFamily: 'monospace' }}>
-            {(JSON.stringify(localStorage).length / (5 * 1024 * 1024) * 100).toFixed(1)}%
-          </span>
-        </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
