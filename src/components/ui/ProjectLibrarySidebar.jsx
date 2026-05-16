@@ -183,7 +183,11 @@ const ProjectLibrarySidebar = ({ showLibrary, setShowLibrary }) => {
         ) : filteredList.map(proj => (
           <div 
             key={proj.id}
-            onClick={() => loadProject(proj.id)}
+            onClick={() => {
+              if (proj.id !== currentProjectId) {
+                loadProject(proj.id);
+              }
+            }}
             style={{
               padding: '15px',
               background: proj.id === currentProjectId ? 'rgba(0, 229, 255, 0.1)' : 'rgba(255,255,255,0.03)',

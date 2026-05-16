@@ -21,6 +21,7 @@ import TacticalControlBar from './components/ui/TacticalControlBar';
 import ProjectLibrarySidebar from './components/ui/ProjectLibrarySidebar';
 import NodeDetailModal from './components/ui/NodeDetailModal';
 import TacticalLegend from './components/ui/TacticalLegend';
+import LoginOverlay from './components/ui/LoginOverlay';
 
 // 캔버스 노드 컴포넌트
 import TacticalNode from './components/TacticalNode';
@@ -49,6 +50,9 @@ const defaultEdgeOptions = {
 };
 
 const FlowCanvas = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('aura_token'));
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
+
   const nodes = useStore((state) => state.nodes);
   const edges = useStore((state) => state.edges);
   const onNodesChange = useStore((state) => state.onNodesChange);
@@ -67,34 +71,40 @@ const FlowCanvas = () => {
   const copySelection = useStore((state) => state.copySelection);
   const pasteSelection = useStore((state) => state.pasteSelection);
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
-
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 1024);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 🛡️ [v4.7.0-PLATINUM] 실시간 전술 동기화 엔진 (Auto-Sync Engine)
-  useEffect(() => {
-    // 1. 주기적 폴링 (60초 간격)
-    const syncInterval = setInterval(() => {
-      console.log('🔄 [Auto-Sync] 정기 데이터 대조 중...');
-      loadFromBackend({ force: false });
-    }, 60000);
+    // 🛡️ [v4.7.2-STABLE] 실시간 전술 동기화 엔진 (Auto-Sync Engine)
+    useEffect(() => {
+      if (!isAuthenticated) return;
+  
+      // 1. 주기적 폴링 (30초 간격으로 단축 - 반응성 강화)
+      const syncInterval = setInterval(() => {
+        console.log('🔄 [Auto-Sync] 정기 데이터 대조 중 (30s)...');
+        loadFromBackend({ force: false });
+      }, 30000);
+  
+      // 2. 윈도우 포커스 감지 (기기 간 전환 시 즉시 동기화)
+      const handleFocus = () => {
+        console.log('✨ [Auto-Sync] 윈도우 포커스 감지: 서버 데이터 즉시 대조');
+        loadFromBackend({ force: true }); // 포커스 시에는 강제 동기화 수행
+      };
+      window.addEventListener('focus', handleFocus);
+  
+      return () => {
+        clearInterval(syncInterval);
+        window.removeEventListener('focus', handleFocus);
+      };
+  }, [loadFromBackend, isAuthenticated]);
 
-    // 2. 윈도우 포커스 감지 (화면 전환 시 즉시 동기화)
-    const handleFocus = () => {
-      console.log('✨ [Auto-Sync] 윈도우 포커스 감지: 최신 데이터 수신 시도');
-      loadFromBackend({ force: false });
-    };
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      clearInterval(syncInterval);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [loadFromBackend]);
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      loadFromBackend();
+    }
+  }, [loadFromBackend, isAuthenticated]);
 
   // 키보드 단축키 처리 (Undo/Redo)
   React.useEffect(() => {
@@ -151,14 +161,12 @@ const FlowCanvas = () => {
 
   const onNodeClick = useCallback((e, node) => {
     if (multiSelectMode) {
-      // 🛡️ 지니어스 엔진: 독자적인 전술 선택 레이어에 명령 하달 (Sovereignty)
       toggleTacticalSelection(node.id);
     }
   }, [multiSelectMode, toggleTacticalSelection]);
 
   const onPaneClick = useCallback((e) => {
     if (multiSelectMode) {
-      // 🛡️ 지니어스 엔진: 다중 선택 모드에서는 배경 클릭으로 인한 전체 해제 방지
       e.preventDefault();
       return;
     }
@@ -166,7 +174,7 @@ const FlowCanvas = () => {
       const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
       addNode(position, '새 전술 거점', 'process');
     }
-  }, [screenToFlowPosition, addNode]);
+  }, [screenToFlowPosition, addNode, multiSelectMode]);
 
   const onPaneContextMenu = useCallback((e) => {
     e.preventDefault();
@@ -176,6 +184,11 @@ const FlowCanvas = () => {
 
   const currentProject = projectList.find(p => p.id === currentProjectId);
   const isLocked = currentProject?.isLocked;
+
+  // 🛡️ 인증되지 않은 경우 로그인 오버레이 표시
+  if (!isAuthenticated) {
+    return <LoginOverlay onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div ref={reactFlowWrapper} style={{ width: '100vw', height: '100vh', background: '#030712', position: 'relative', overflow: 'hidden' }}>

@@ -154,6 +154,36 @@ const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToo
         >
           <Wrench size={18} />
         </button>
+
+        <div className="divider" style={{ height: '15px' }}></div>
+
+        {/* 🚪 로그아웃 버튼 (v4.7.0) */}
+        <button 
+          onClick={() => {
+            if (confirm('작전 구역에서 퇴장하시겠습니까?')) {
+              localStorage.removeItem('aura_token');
+              localStorage.removeItem('aura_user_role');
+              window.location.reload();
+            }
+          }}
+          style={{ 
+            background: 'rgba(244, 63, 94, 0.1)', 
+            border: '1px solid rgba(244, 63, 94, 0.3)', 
+            color: '#f43f5e', 
+            padding: '4px 8px',
+            borderRadius: '6px',
+            fontSize: '11px',
+            fontWeight: '900',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            transition: 'all 0.2s'
+          }}
+          title="안전하게 퇴장"
+        >
+          LOGOUT
+        </button>
       </div>
     </div>
   );

@@ -14,8 +14,7 @@
 | :--- | :--- | :--- | :--- |
 | **Source of Truth** | **Windows Local** | `c:\Users\slo76\My_projects\agent-canvas` | `http://localhost:5173/canvas/` |
 | **Staging (WSL2)** | **Ubuntu Source** | `/home/philmong/agent-canvas/` | - |
-| **Staging (Build)** | **Ubuntu Target** | `/home/philmong/aura-map/` | `https://dev.philmong.co.kr/canvas2/` |
-| **Production** | **Remote Server** | `/home/philmong/agent-canvas/` | `https://philmong.co.kr/canvas/` |
+| **Production (Integrated)** | **Ubuntu Target** | `/home/philmong/agent-canvas/dist/` | `https://philmong.co.kr/canvas/` |
 
 ---
 
@@ -41,18 +40,18 @@
 *   **해결**: WSL2 환경 내부에서 `npm install`을 재수행하여 의존성 정합성 복구.
 *   **결과**: Vite v8.0.10 기반 프로덕션 빌드 성공.
 
-### 🔄 동기화 프로세스 (Dual-Track Sync)
-1.  **Local -> WSL2**: `rsync`를 통해 `.git`, `node_modules`를 제외한 순수 소스 전송 완료.
+### 🔄 동기화 프로세스 (Integrated Sync)
+1.  **Local -> WSL2**: `rsync`를 통해 소스 전송 완료.
 2.  **WSL2 Build**: `/home/philmong/agent-canvas/dist` 생성 완료.
-3.  **Deploy to Staging**: `dist`의 결과물을 `/home/philmong/aura-map/`으로 복사하여 외부 접속 경로(`canvas2`) 확보.
+3.  **Path Consolidation**: `/canvas2`를 폐기하고 모든 전술 자산을 `/canvas/` 경로로 통합함.
 
 ---
 
 ## 4. 특이 사항 및 주의 (Tactical Notes)
 
-*   **경로 불일치 주의**: Nginx 설정 상 `/canvas/`는 개발 서버 프록시를, `/canvas2/`는 정적 빌드 결과물을 가리킵니다. 스테이징 확인 시 반드시 `/canvas2/` 경로를 사용하십시오.
-*   **버전 배지**: 현재 모든 환경에서 `v4.6.1-PLATINUM` 배지가 정상적으로 표시되고 있습니다.
-*   **데이터 정합성**: `Data Shield` 엔진이 활성화되어 있어, 데이터가 유실된 상태에서의 동기화를 원천 차단하고 있습니다.
+*   **경로 통합 완료**: 이제 `/canvas2/`는 사용되지 않으며, 모든 정적 자산과 프록시는 `/canvas/`로 수렴됩니다.
+*   **버전 배지**: 현재 모든 환경에서 `v4.7.1-STABLE` 배지가 정상적으로 표시되고 있습니다.
+*   **데이터 정합성**: `Data Shield` 엔진 및 서버 ID 동기화 로직이 활성화되어 있습니다.
 
 ---
 

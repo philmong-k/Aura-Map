@@ -169,30 +169,33 @@ const useStore = create((set, get) => ({
       const { nodes, edges, currentProjectId, projectList, syncToBackend } = get();
       if (!currentProjectId) return;
 
-      const lastModified = new Date().toISOString();
-      const projectInfo = projectList.find(p => p.id === currentProjectId);
-      const isLocked = projectInfo?.isLocked || false;
-
-      // 1. 개별 프로젝트 데이터 저장 (로컬 저장소 임시 비활성화 - 지휘관 명령)
-      // localStorage.setItem(`${STORAGE_KEY}-${currentProjectId}`, projectData);
+      // 1. 개별 프로젝트 데이터 저장 (로컬 캐시 부활 - 오프라인 가용성 및 깜빡임 방지)
+      const projectData = JSON.stringify({
+        nodes,
+        edges,
+        lastModified,
+        version: projectInfo?.version || 1
+      });
+      localStorage.setItem(`${STORAGE_KEY}-${currentProjectId}`, projectData);
       localStorage.setItem('aura-map-last-project-id', currentProjectId);
       
-      // 2. 목록 업데이트 (메모리 내 상태만 유지)
+      // 2. 목록 업데이트 (메모리 및 로컬 스토리지)
       const list = get().projectList;
       const existingIndex = list.findIndex(p => p.id === currentProjectId);
       if (existingIndex > -1) {
         list[existingIndex].lastModified = lastModified;
         set({ projectList: [...list] });
+        localStorage.setItem(LIST_KEY, JSON.stringify(get().projectList));
       }
 
       // 3. 백엔드 동기화 (즉시 혹은 지연)
       if (syncTimer) clearTimeout(syncTimer);
       
       if (immediateSync) {
-        syncToBackend(currentProjectId);
+        get().syncToBackend(currentProjectId);
       } else {
         syncTimer = setTimeout(() => {
-          syncToBackend(currentProjectId);
+          get().syncToBackend(currentProjectId);
         }, 3000); 
       }
     } catch (error) {
@@ -209,7 +212,7 @@ const useStore = create((set, get) => ({
     }));
   },
 
-  // 백엔드 실시간 동기화 브릿지 (🛸 지니어스 엔진: 데이터 유실 방지 필터 탑재)
+  // 백엔드 실시간 동기화 브릿지 (🛸 지니어스 엔진: ID 동기화 및 유실 방지 필터 탑재)
   syncToBackend: async (projectId) => {
     const { nodes, edges, currentProjectId, currentProjectName, projectList } = get();
     const targetId = projectId || currentProjectId;
@@ -221,9 +224,7 @@ const useStore = create((set, get) => ({
       return;
     }
 
-    const BACKEND_URL = import.meta.env.VITE_QUARK_CORE_URL;
-    if (BACKEND_URL === undefined || BACKEND_URL === null) return;
-
+    const BACKEND_URL = import.meta.env.VITE_QUARK_CORE_URL || '';
     const projectInfo = projectList.find(p => p.id === targetId);
     if (!projectInfo) return;
 
@@ -231,45 +232,71 @@ const useStore = create((set, get) => ({
     let syncEdges = edges;
     let syncName = currentProjectName;
 
+    // 현재 열린 프로젝트가 아닌 다른 프로젝트를 동기화할 때 (예: 잠금 토글)
     if (targetId !== currentProjectId) {
       const storedData = loadProjectData(targetId);
-      if (!storedData || (storedData.nodes?.length === 0 && storedData.edges?.length === 0)) {
-        console.warn('⚠️ [Data Shield] 로컬 캐시 데이터가 비어있어 외부 프로젝트 동기화를 차단합니다.');
-        return;
-      }
-      syncNodes = storedData.nodes;
-      syncEdges = storedData.edges;
+      if (!storedData) return;
+      syncNodes = storedData.nodes || [];
+      syncEdges = storedData.edges || [];
       syncName = projectInfo.name;
     }
-
-    console.log(`📡 [Sync] '${syncName}' (${targetId}) 작전 데이터 전송 중... (노드: ${syncNodes.length}개)`);
 
     try {
       const userToken = localStorage.getItem('aura_token');
       const authHeader = userToken ? `Bearer ${userToken}` : `Bearer ${import.meta.env.VITE_TACTICAL_API_KEY}`;
 
-      const response = await fetch(`${BACKEND_URL}/api/tactical/sync`, {
+      const response = await fetch(`${BACKEND_URL}/api/tactical-map`, {
         method: 'POST',
-        mode: 'cors',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': authHeader,
-          'X-Device-Id': navigator.userAgent
+          'Authorization': authHeader
         },
         body: JSON.stringify({
-          projectId: targetId,
-          projectName: syncName,
-          data: { 
-            nodes: syncNodes, 
-            edges: syncEdges, 
-            isLocked: projectInfo.isLocked || false,
-            isPinned: projectInfo.isPinned || false
-          },
-          lastModified: new Date().toISOString()
+          id: targetId,
+          version: projectInfo.version || 0, // [v4.7.9] 버전 정보 추가
+          server_updated_at: projectInfo.serverUpdatedAt,
+          nodes: syncNodes,
+          edges: syncEdges,
+          title: syncName,
+          folder_name: projectInfo.folder || 'Unclassified',
+          visibility: projectInfo.visibility || 'PRIVATE'
         })
       });
-
+      
       if (response.ok) {
+        const resData = await response.json();
+        const serverTime = resData.updated_at;
+        const serverVersion = resData.version;
+        
+        set((state) => {
+          const newList = [...state.projectList];
+          const idx = newList.findIndex(p => p.id === targetId || p.id === resData.id);
+          if (idx !== -1) {
+            if (serverTime) {
+              newList[idx].serverUpdatedAt = serverTime;
+              newList[idx].lastModified = serverTime;
+            }
+            if (serverVersion) {
+              newList[idx].version = serverVersion;
+            }
+            if (resData.id) newList[idx].id = resData.id;
+          }
+          return { projectList: newList };
+        });
+
+        // 🛡️ ID 승격 시 추가 처리 (localStorage 등)
+        if (resData.id && targetId !== resData.id) {
+          console.log(`🆔 [Sync] 임시 ID(${targetId})를 서버 ID(${resData.id})로 승격합니다.`);
+          const data = localStorage.getItem(`${STORAGE_KEY}-${targetId}`);
+          if (data) {
+            localStorage.setItem(`${STORAGE_KEY}-${resData.id}`, data);
+            localStorage.removeItem(`${STORAGE_KEY}-${targetId}`);
+          }
+          set({ currentProjectId: get().currentProjectId === targetId ? resData.id : get().currentProjectId });
+        }
+        
+        // 전역 목록 스토리지 갱신
+        localStorage.setItem(LIST_KEY, JSON.stringify(get().projectList));
         console.log(`✅ [Sync] 백엔드 동기화 성공: ${syncName}`);
       }
     } catch (error) {
@@ -279,17 +306,18 @@ const useStore = create((set, get) => ({
 
   // 백엔드에서 프로젝트 삭제
   deleteFromBackend: async (projectId) => {
-    const BACKEND_URL = import.meta.env.VITE_QUARK_CORE_URL ?? null;
-    if (BACKEND_URL === null || BACKEND_URL === undefined) return;
-
+    const BACKEND_URL = import.meta.env.VITE_QUARK_CORE_URL || '';
     try {
-      await fetch(`${BACKEND_URL}/api/tactical/delete/${projectId}`, {
+      const userToken = localStorage.getItem('aura_token');
+      const authHeader = userToken ? `Bearer ${userToken}` : `Bearer ${import.meta.env.VITE_TACTICAL_API_KEY}`;
+
+      const response = await fetch(`${BACKEND_URL}/api/tactical-map/${projectId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_TACTICAL_API_KEY}`
-        }
+        headers: { 'Authorization': authHeader }
       });
-      console.log(`✅ 백엔드에서 프로젝트 ${projectId} 삭제 완료`);
+      if (response.ok) {
+        console.log(`✅ 백엔드에서 프로젝트 ${projectId} 삭제 완료`);
+      }
     } catch (error) {
       console.warn('⚠️ 백엔드 삭제 실패:', error.message);
     }
@@ -298,77 +326,94 @@ const useStore = create((set, get) => ({
   // 백엔드에서 모든 데이터 불러오기
   loadFromBackend: async (options = { force: false }) => {
     if (!options.force) set({ isLoading: true });
-    const BACKEND_URL = import.meta.env.VITE_QUARK_CORE_URL ?? null;
-    if (BACKEND_URL === null || BACKEND_URL === undefined) return;
+    const BACKEND_URL = import.meta.env.VITE_QUARK_CORE_URL || '';
 
     try {
       const userToken = localStorage.getItem('aura_token');
       const authHeader = userToken ? `Bearer ${userToken}` : `Bearer ${import.meta.env.VITE_TACTICAL_API_KEY}`;
 
-      let response = await fetch(`${BACKEND_URL}/api/tactical/load`, {
+      const response = await fetch(`${BACKEND_URL}/api/tactical-map`, {
         headers: { 'Authorization': authHeader }
       });
 
       if (!response.ok) throw new Error('데이터 불러오기 실패');
       
       const remoteProjects = await response.json();
-      if (remoteProjects.length > 0) {
-        const localList = getProjectList();
+      set((state) => {
+        const localList = [...state.projectList];
         const mergedList = [...localList];
 
         remoteProjects.forEach(remote => {
-          const index = mergedList.findIndex(p => p.id === remote.id);
-          const remoteName = remote.name || '알 수 없는 작전';
-          const remoteData = typeof remote.data === 'string' ? JSON.parse(remote.data) : remote.data;
+          // 🛡️ [v4.7.1] ID 또는 (제목+수정시간) 기반 정밀 매칭으로 중복 생성 방지
+          const index = mergedList.findIndex(p => 
+            p.id === remote.id || (p.name === remote.title && Math.abs(new Date(p.lastModified) - new Date(remote.updated_at)) < 5000)
+          );
+
+          const existingLocal = mergedList[index];
+          const localTime = existingLocal?.lastModified ? new Date(existingLocal.lastModified).getTime() : 0;
+          const remoteTime = new Date(remote.updated_at).getTime();
+
+          const remoteInfo = {
+            id: remote.id,
+            name: (existingLocal && localTime > remoteTime + 1000) ? existingLocal.name : remote.title,
+            lastModified: remote.updated_at,
+            serverUpdatedAt: remote.updated_at,
+            version: remote.version || 1, // [v4.7.9] 서버 버전 정보 저장
+            folder: remote.folder_name,
+            visibility: remote.visibility,
+            isRemote: true
+          };
 
           if (index === -1) {
-            mergedList.push({ 
-              id: remote.id, 
-              name: remoteName, 
-              lastModified: remote.lastModified, 
-              isRemote: true,
-              isLocked: remoteData?.isLocked || false,
-              isPinned: remoteData?.isPinned || false
-            });
+            mergedList.push(remoteInfo);
           } else {
-            mergedList[index] = {
-              ...mergedList[index],
-              name: remoteName, // 이름 동기화 강제
-              lastModified: remote.lastModified,
-              isRemote: true,
-              isLocked: remoteData?.isLocked || false,
-              isPinned: remoteData?.isPinned || false
-            };
+            // ID가 달랐던 경우(임시 ID) 서버 ID로 업데이트
+            if (mergedList[index].id !== remote.id) {
+              console.log(`🔗 [Merge] 임시 ID(${mergedList[index].id})를 정식 ID(${remote.id})로 통합합니다.`);
+              const oldId = mergedList[index].id;
+              localStorage.removeItem(`${STORAGE_KEY}-${oldId}`);
+              mergedList[index] = remoteInfo;
+            } else {
+              mergedList[index] = { ...mergedList[index], ...remoteInfo };
+            }
           }
-          localStorage.setItem(`${STORAGE_KEY}-${remote.id}`, JSON.stringify({ ...remoteData, lastModified: remote.lastModified }));
+          
+          // 개별 프로젝트 데이터 로컬 캐싱
+          localStorage.setItem(`${STORAGE_KEY}-${remote.id}`, JSON.stringify({
+            nodes: remote.nodes,
+            edges: remote.edges,
+            snapshots: remote.snapshots || [],
+            lastModified: remote.updated_at
+          }));
         });
 
+        // 서버에 없는 'isRemote' 항목 제거 (원격 삭제 반영)
         const remoteIds = remoteProjects.map(p => p.id);
         const finalList = mergedList.filter(p => !p.isRemote || remoteIds.includes(p.id));
-        localStorage.setItem(LIST_KEY, JSON.stringify(finalList));
-        set({ projectList: finalList });
-
-        // 현재 활성화된 프로젝트 최신화
-        const { currentProjectId, nodes: localNodes } = get();
-        const currentRemote = remoteProjects.find(p => p.id === currentProjectId);
         
-        if (currentRemote) {
-          const localData = loadProjectData(currentProjectId);
-          const remoteTime = new Date(currentRemote.lastModified).getTime();
-          const localTime = localData?.lastModified ? new Date(localData.lastModified).getTime() : 0;
+        localStorage.setItem(LIST_KEY, JSON.stringify(finalList));
+        return { projectList: finalList };
+      });
 
-          if (options.force || remoteTime > localTime) {
-            const remoteData = typeof currentRemote.data === 'string' ? JSON.parse(currentRemote.data) : currentRemote.data;
-            const standardizedNodes = migrateNodes(remoteData.nodes || []);
-            const standardizedEdges = migrateEdges(remoteData.edges || [], standardizedNodes);
+      // 🔄 [v4.7.1] 현재 활성화된 프로젝트 최신화 (실시간 동기화 완성)
+      const { currentProjectId, nodes: localNodes } = get();
+      const currentRemote = remoteProjects.find(p => p.id === currentProjectId);
+      
+      if (currentRemote) {
+        const localData = loadProjectData(currentProjectId);
+        const remoteTime = new Date(currentRemote.updated_at).getTime();
+        const localTime = localData?.lastModified ? new Date(localData.lastModified).getTime() : 0;
 
-            set({
-              nodes: standardizedNodes,
-              edges: standardizedEdges,
-              currentProjectName: currentRemote.name // 이름 즉시 반영
-            });
-            console.log(`📡 [${currentProjectId}] ${options.force ? '강제' : '서버'} 최신화 완료.`);
-          }
+        if (options.force || remoteTime > localTime) {
+          const standardizedNodes = migrateNodes(currentRemote.nodes || []);
+          const standardizedEdges = migrateEdges(currentRemote.edges || [], standardizedNodes);
+
+          set({
+            nodes: standardizedNodes,
+            edges: standardizedEdges,
+            currentProjectName: currentRemote.title
+          });
+          console.log(`📡 [${currentProjectId}] 서버 최신 데이터 수신 완료.`);
         }
       }
     } catch (error) {
@@ -474,7 +519,7 @@ const useStore = create((set, get) => ({
     
     if (id === currentProjectId) {
       set({ currentProjectName: newName });
-      get().saveToStorage();
+      get().saveToStorage(true); // [v4.7.6] 이름 변경은 지연 없이 즉시 서버에 보고 (폴링과 경합 방지)
     }
   },
 

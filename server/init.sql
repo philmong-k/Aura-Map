@@ -17,5 +17,15 @@ CREATE TABLE `tactical_maps` (
   INDEX (`folder_name`)
 );
 
--- 초기 미분류 폴더 예시 (필요시 제거 가능)
--- INSERT INTO tactical_maps (user_id, folder_name, title, data) VALUES ('guest', 'Unclassified', 'Initial Setup', '{"nodes":[], "edges":[]}');
+-- 👥 사용자 계정 테이블 (ID/PW 체계)
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `username` VARCHAR(50) UNIQUE NOT NULL,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `role` VARCHAR(20) DEFAULT 'Operator',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 초기 관리자 계정 생성 (패스워드 간소화: commander)
+INSERT INTO `users` (username, password_hash, role) VALUES ('commander', 'commander', 'admin') 
+ON DUPLICATE KEY UPDATE password_hash='commander';

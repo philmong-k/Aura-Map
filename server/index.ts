@@ -3,6 +3,7 @@ import cors from 'cors';
 import pool from './db';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 
 dotenv.config();
 
@@ -12,32 +13,88 @@ const PORT = process.env.PORT || 3002;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// 🛡️ JWT 인증 미들웨어 (Aura SSO 연동)
+// 🛡️ [v4.7.0-PLATINUM] Aura Standard 인증 수문장 (Standard Auth Engine)
 const authMiddleware = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
+  const AURA_SECRET = process.env.AURA_JWT_SECRET || 'aura-prime-sovereign-key';
+  const TACTICAL_API_KEY = process.env.VITE_TACTICAL_API_KEY || 'aura-tactical-default-key';
 
-  if (!token) return res.status(401).json({ error: '인증 토큰이 누락되었습니다.' });
+  if (!token) return res.status(401).json({ error: 'Aura 성문에 접근하기 위한 통행증(Token)이 누락되었습니다.' });
 
+  // 1. 만능키(Master Key) 또는 시스템 API 키 인증 (지휘관 전용 특권)
+  if (token === TACTICAL_API_KEY || token === 'commander') {
+    req.user = { sub: 'Commander_Slo', role: 'admin', permissions: ['plan:edit', 'plan:delete'] };
+    console.log('👑 [Auth] 지휘관 마스터 키(Universal Key) 인증 성공');
+    return next();
+  }
+
+  // 2. JWT 서명 검증 (정식 지휘권 확인)
   try {
-    const decoded = jwt.decode(token) as any;
-    if (!decoded) return res.status(403).json({ error: '유효하지 않은 토큰입니다.' });
-    
-    req.user = decoded; // { email, role, permissions }
+    const decoded = jwt.verify(token, AURA_SECRET) as any;
+    req.user = decoded;
+    console.log(`👤 [Auth] 사용자 인증 성공: ${decoded.sub} (${decoded.role})`);
     next();
   } catch (err) {
-    return res.status(403).json({ error: '토큰 해석 중 오류가 발생했습니다.' });
+    console.warn('🚨 [Auth Fail] 위조되거나 만료된 통행증 감지!');
+    return res.status(403).json({ error: '위조되거나 만료된 통행증입니다. 접근을 거부합니다.' });
   }
 };
+
+// 🔐 [v4.7.0-PLATINUM] 탈중앙화 통합 인증 라우트 (Aura Hub 명부 공유)
+app.post('/api/auth/login', async (req, res) => {
+  const { username, password } = req.body;
+  const AURA_SECRET = process.env.AURA_JWT_SECRET || 'philmong_aura_secret_key_2026';
+  const MASTER_KEY = 'commander';
+
+  // [Case 1] 지휘관 만능키(Master Key) - 즉시 승인 및 Admin 권한 부여
+  if (password === MASTER_KEY) {
+    const token = jwt.sign(
+      { sub: username || 'commander', role: 'ADMIN', permissions: ['plan:edit', 'plan:delete', 'access:canvas'] }, 
+      AURA_SECRET, 
+      { expiresIn: '365d' }
+    );
+    console.log(`👑 [Auth] 지휘관 마스터 키 로그인 성공: ${username || 'commander'}`);
+    return res.json({ token, role: 'ADMIN', message: '지휘관님, 환영합니다. 모든 성문이 열렸습니다.' });
+  }
+
+  // [Case 2] 아우라 허브(Aura Hub) 명부 대조 (Shared DB)
+  try {
+    // Hub는 email을 ID로 사용하므로 username을 email 컬럼에 매칭
+    const [users]: any = await pool.query('SELECT * FROM User WHERE email = ?', [username]);
+    if (users.length === 0) return res.status(401).json({ error: '사령부 명단에 없는 대원입니다.' });
+
+    const user = users[0];
+    
+    // 🛡️ Bcrypt를 통한 표준 비밀번호 검증
+    const isValid = await bcrypt.compare(password, user.password);
+    
+    if (isValid) { 
+      const token = jwt.sign(
+        { sub: user.email, role: user.role, permissions: ['plan:view', 'access:canvas'] }, 
+        AURA_SECRET, 
+        { expiresIn: '24h' }
+      );
+      console.log(`👤 [Auth] 정식 대원 로그인 성공: ${username}`);
+      return res.json({ token, role: user.role, message: `${user.name || username} 대원, 진입을 허가한다.` });
+    } else {
+      return res.status(401).json({ error: '비밀번호가 일치하지 않습니다.' });
+    }
+  } catch (error) {
+    console.error('Login Error:', error);
+    res.status(500).json({ error: '사령부 명부 조회 중 오류 발생' });
+  }
+});
 
 // 🏠 루트 경로
 app.get('/', (req, res) => {
   res.send('🚀 NEURAL BACKEND Server is running and hungry for tactical data!');
 });
 
-// 🛰️ GET /api/tactical-map
-app.get('/api/tactical-map', async (req, res) => {
-  const { user_id = 'guest' } = req.query;
+// 🛰️ GET /api/tactical-map (보안 강화)
+app.get('/api/tactical-map', authMiddleware, async (req: any, res) => {
+  const user = req.user;
+  const user_id = user.sub || user.email || 'guest';
   try {
     const [rows]: any = await pool.query(
       `SELECT id, user_id, folder_name, title, visibility, data, updated_at 
@@ -62,10 +119,11 @@ app.get('/api/tactical-map', async (req, res) => {
   }
 });
 
-// 📡 POST /api/tactical-map
-app.post('/api/tactical-map', async (req, res) => {
+// 📡 POST /api/tactical-map (저장 권한 검증)
+app.post('/api/tactical-map', authMiddleware, async (req: any, res) => {
+  const user = req.user;
   const { 
-    nodes, edges, snapshots = [], user_id = 'guest', 
+    nodes, edges, snapshots = [], user_id = user.sub || user.email || 'guest', 
     folder_name = 'Unclassified', title = 'Untitled Tactical Map',
     visibility = 'PRIVATE' 
   } = req.body;
@@ -84,22 +142,24 @@ app.post('/api/tactical-map', async (req, res) => {
         'UPDATE tactical_maps SET data = ?, visibility = ?, updated_at = NOW() WHERE id = ?',
         [dataString, visibility, existing[0].id]
       );
+      res.json({ message: '✅ 저장 완료', id: existing[0].id, user_id, folder_name, title, visibility });
     } else {
-      await pool.query(
+      const [result]: any = await pool.query(
         'INSERT INTO tactical_maps (user_id, folder_name, title, visibility, data) VALUES (?, ?, ?, ?, ?)',
         [user_id, folder_name, title, visibility, dataString]
       );
+      res.json({ message: '✅ 저장 완료', id: result.insertId, user_id, folder_name, title, visibility });
     }
-    res.json({ message: '✅ 저장 완료', user_id, folder_name, title, visibility });
   } catch (error) {
     console.error('Save Error:', error);
     res.status(500).json({ error: '저장 실패' });
   }
 });
 
-// 📂 PATCH /api/tactical-map/folder
-app.patch('/api/tactical-map/folder', async (req, res) => {
-  const { oldName, newName, user_id = 'guest' } = req.body;
+// 📂 PATCH /api/tactical-map/folder (관리 권한 검증)
+app.patch('/api/tactical-map/folder', authMiddleware, async (req: any, res) => {
+  const user = req.user;
+  const { oldName, newName, user_id = user.sub || user.email || 'guest' } = req.body;
   try {
     await pool.query('UPDATE tactical_maps SET folder_name = ? WHERE folder_name = ? AND user_id = ?', [newName, oldName, user_id]);
     res.json({ message: '✅ 폴더 이동 완료' });
@@ -108,10 +168,11 @@ app.patch('/api/tactical-map/folder', async (req, res) => {
   }
 });
 
-// 📂 DELETE /api/tactical-map/folder/:name
-app.delete('/api/tactical-map/folder/:name', async (req, res) => {
+// 📂 DELETE /api/tactical-map/folder/:name (삭제 권한 검증)
+app.delete('/api/tactical-map/folder/:name', authMiddleware, async (req: any, res) => {
+  const user = req.user;
   const { name } = req.params;
-  const { user_id = 'guest' } = req.query;
+  const user_id = user.sub || user.email || 'guest';
   try {
     await pool.query('DELETE FROM tactical_maps WHERE folder_name = ? AND user_id = ?', [name, user_id]);
     res.json({ message: '🔥 폴더 삭제 완료' });
