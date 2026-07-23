@@ -3,7 +3,6 @@ import cors from 'cors';
 import pool from './db';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
 
 dotenv.config();
@@ -27,22 +26,13 @@ if (!process.env.AURA_JWT_SECRET) {
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// 🛡️ [v4.7.0-PLATINUM] Aura Standard 인증 수문장 (Standard Auth Engine)
+// 🛡️ 인증 미들웨어 — Google 로그인으로 발급된 자체 JWT만 허용
 const authMiddleware = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-  const TACTICAL_API_KEY = process.env.VITE_TACTICAL_API_KEY || 'aura-tactical-default-key';
 
   if (!token) return res.status(401).json({ error: '인증 토큰이 누락되었습니다.' });
 
-  // 1. 만능키(Master Key) 또는 시스템 API 키 인증 (지휘관 전용 특권)
-  if (token === TACTICAL_API_KEY || token === 'commander') {
-    req.user = { sub: 'Commander_Slo', role: 'admin', permissions: ['plan:edit', 'plan:delete'] };
-    console.log('👑 [Auth] 지휘관 마스터 키(Universal Key) 인증 성공');
-    return next();
-  }
-
-  // 2. JWT 서명 검증 (정식 지휘권 확인)
   try {
     const decoded = jwt.verify(token, AURA_SECRET) as any;
     req.user = decoded;
@@ -54,50 +44,7 @@ const authMiddleware = (req: any, res: any, next: any) => {
   }
 };
 
-// 🔐 [v4.7.0-PLATINUM] 자체 로그인 라우트 (agent_canvas 전용 users 테이블 조회, Supabase Auth와는 분리)
-app.post('/api/auth/login', async (req, res) => {
-  const { username, password } = req.body;
-  const MASTER_KEY = 'commander';
-
-  // [Case 1] 지휘관 만능키(Master Key) - 즉시 승인 및 Admin 권한 부여
-  if (password === MASTER_KEY) {
-    const token = jwt.sign(
-      { sub: username || 'commander', role: 'ADMIN', permissions: ['plan:edit', 'plan:delete', 'access:canvas'] },
-      AURA_SECRET,
-      { expiresIn: '365d' }
-    );
-    console.log(`👑 [Auth] 지휘관 마스터 키 로그인 성공: ${username || 'commander'}`);
-    return res.json({ token, role: 'ADMIN', message: '환영합니다. 로그인되었습니다.' });
-  }
-
-  // [Case 2] agent_canvas 전용 users 테이블 대조
-  try {
-    const { rows: users } = await pool.query('SELECT * FROM users WHERE email = $1', [username]);
-    if (users.length === 0) return res.status(401).json({ error: '등록되지 않은 계정입니다.' });
-
-    const user = users[0];
-
-    // 🛡️ Bcrypt를 통한 표준 비밀번호 검증
-    const isValid = await bcrypt.compare(password, user.password);
-
-    if (isValid) {
-      const token = jwt.sign(
-        { sub: user.email, role: user.role, permissions: ['plan:view', 'access:canvas'] },
-        AURA_SECRET,
-        { expiresIn: '24h' }
-      );
-      console.log(`👤 [Auth] 정식 대원 로그인 성공: ${username}`);
-      return res.json({ token, role: user.role, message: `${user.name || username}님, 환영합니다.` });
-    } else {
-      return res.status(401).json({ error: '비밀번호가 일치하지 않습니다.' });
-    }
-  } catch (error) {
-    console.error('Login Error:', error);
-    res.status(500).json({ error: '계정 조회 중 오류 발생' });
-  }
-});
-
-// 🔐 구글 로그인 (Google Identity Services ID 토큰 검증 후 자체 JWT 발급)
+// 🔐 구글 로그인 (Google Identity Services ID 토큰 검증 후 자체 JWT 발급) — 유일한 로그인 방식
 app.post('/api/auth/google', async (req, res) => {
   const { credential } = req.body;
   if (!credential) return res.status(400).json({ error: 'credential이 필요합니다.' });

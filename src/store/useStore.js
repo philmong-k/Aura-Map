@@ -257,7 +257,7 @@ const useStore = create((set, get) => ({
 
     try {
       const userToken = localStorage.getItem('aura_token');
-      const authHeader = userToken ? `Bearer ${userToken}` : `Bearer ${import.meta.env.VITE_TACTICAL_API_KEY}`;
+      const authHeader = `Bearer ${userToken}`;
 
       const response = await fetch(`${BACKEND_URL}/api/tactical-map`, {
         method: 'POST',
@@ -323,7 +323,7 @@ const useStore = create((set, get) => ({
     const BACKEND_URL = import.meta.env.VITE_QUARK_CORE_URL || '';
     try {
       const userToken = localStorage.getItem('aura_token');
-      const authHeader = userToken ? `Bearer ${userToken}` : `Bearer ${import.meta.env.VITE_TACTICAL_API_KEY}`;
+      const authHeader = `Bearer ${userToken}`;
 
       const response = await fetch(`${BACKEND_URL}/api/tactical-map/${projectId}`, {
         method: 'DELETE',
@@ -344,7 +344,7 @@ const useStore = create((set, get) => ({
 
     try {
       const userToken = localStorage.getItem('aura_token');
-      const authHeader = userToken ? `Bearer ${userToken}` : `Bearer ${import.meta.env.VITE_TACTICAL_API_KEY}`;
+      const authHeader = `Bearer ${userToken}`;
 
       const response = await fetch(`${BACKEND_URL}/api/tactical-map`, {
         headers: { 'Authorization': authHeader }
