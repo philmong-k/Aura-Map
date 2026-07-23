@@ -4,8 +4,15 @@ import pool from './db';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import { OAuth2Client } from 'google-auth-library';
 
 dotenv.config();
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const ALLOWED_GOOGLE_EMAILS = (process.env.ALLOWED_GOOGLE_EMAILS || '')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -87,6 +94,41 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (error) {
     console.error('Login Error:', error);
     res.status(500).json({ error: '계정 조회 중 오류 발생' });
+  }
+});
+
+// 🔐 구글 로그인 (Google Identity Services ID 토큰 검증 후 자체 JWT 발급)
+app.post('/api/auth/google', async (req, res) => {
+  const { credential } = req.body;
+  if (!credential) return res.status(400).json({ error: 'credential이 필요합니다.' });
+  if (!process.env.GOOGLE_CLIENT_ID) return res.status(500).json({ error: '구글 로그인이 서버에 설정되어 있지 않습니다.' });
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const email = payload?.email?.toLowerCase();
+
+    if (!email || !payload?.email_verified) {
+      return res.status(401).json({ error: '이메일 인증이 확인되지 않은 구글 계정입니다.' });
+    }
+    if (!ALLOWED_GOOGLE_EMAILS.includes(email)) {
+      console.warn(`🚫 [Auth] 허용되지 않은 구글 계정 로그인 시도: ${email}`);
+      return res.status(403).json({ error: '허용되지 않은 계정입니다.' });
+    }
+
+    const token = jwt.sign(
+      { sub: email, role: 'ADMIN', permissions: ['plan:edit', 'plan:delete', 'access:canvas'] },
+      AURA_SECRET,
+      { expiresIn: '365d' }
+    );
+    console.log(`👑 [Auth] 구글 로그인 성공: ${email}`);
+    return res.json({ token, role: 'ADMIN', message: `${payload.name || email}님, 환영합니다.` });
+  } catch (error) {
+    console.error('Google Auth Error:', error);
+    return res.status(401).json({ error: '구글 인증에 실패했습니다.' });
   }
 });
 
