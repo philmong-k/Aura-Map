@@ -29,6 +29,8 @@ jobs:
       shell: powershell
       run: |
         scp -o StrictHostKeyChecking=accept-new -r dist/* philmong@100.95.147.38:/home/philmong/apps/agent-canvas/
+        # scp가 새로 만드는 디렉터리를 700으로 만들어 nginx(www-data)가 못 읽는 문제 방지
+        ssh -o StrictHostKeyChecking=accept-new philmong@100.95.147.38 "chmod -R 755 /home/philmong/apps/agent-canvas"
 
     - name: 백엔드 서버 업로드
       shell: powershell
