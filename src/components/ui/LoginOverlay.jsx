@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './LoginOverlay.css';
 
 const LoginOverlay = ({ onLoginSuccess }) => {
@@ -6,6 +6,14 @@ const LoginOverlay = ({ onLoginSuccess }) => {
   const [accessKey, setAccessKey] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const googleButtonRef = useRef(null);
+
+  const applyToken = (data) => {
+    localStorage.setItem('aura_token', data.token);
+    localStorage.setItem('aura_user_role', data.role);
+    console.log(`✅ [Auth] ${data.message}`);
+    onLoginSuccess();
+  };
 
   const handleAuthenticate = async (e) => {
     e.preventDefault();
@@ -23,11 +31,7 @@ const LoginOverlay = ({ onLoginSuccess }) => {
       const data = await response.json();
 
       if (response.ok) {
-        // 🔑 통행증(Token) 획득 성공
-        localStorage.setItem('aura_token', data.token);
-        localStorage.setItem('aura_user_role', data.role);
-        console.log(`✅ [Auth] ${data.message}`);
-        onLoginSuccess();
+        applyToken(data);
       } else {
         setError(data.error || '인증에 실패했습니다.');
       }
@@ -39,6 +43,61 @@ const LoginOverlay = ({ onLoginSuccess }) => {
     }
   };
 
+  const handleGoogleCredential = async (credentialResponse) => {
+    setError('');
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: credentialResponse.credential })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        applyToken(data);
+      } else {
+        setError(data.error || '구글 인증에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error('Google Auth Error:', err);
+      setError('인증 서버와 통신할 수 없습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+
+    let cancelled = false;
+
+    const tryInit = () => {
+      if (cancelled) return;
+      if (!window.google?.accounts?.id) {
+        setTimeout(tryInit, 100);
+        return;
+      }
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCredential,
+      });
+      if (googleButtonRef.current) {
+        window.google.accounts.id.renderButton(googleButtonRef.current, {
+          theme: 'filled_black',
+          size: 'large',
+          width: 320,
+          text: 'signin_with',
+        });
+      }
+    };
+
+    tryInit();
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <div className="login-overlay">
       <div className="login-card">
@@ -47,6 +106,13 @@ const LoginOverlay = ({ onLoginSuccess }) => {
           <h1>로그인</h1>
           <p>로그인 정보를 입력해 주세요.</p>
         </div>
+
+        {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+          <>
+            <div ref={googleButtonRef} style={{ display: 'flex', justifyContent: 'center', margin: '10px 0' }} />
+            <div className="login-divider"><span>또는</span></div>
+          </>
+        )}
 
         <form onSubmit={handleAuthenticate} className="login-form">
           <div className="input-group">
