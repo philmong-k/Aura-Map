@@ -26,21 +26,21 @@ jobs:
       run: npm run build
 
     - name: 프론트엔드 서버 업로드
-      shell: pwsh
+      shell: powershell
       run: |
         scp -o StrictHostKeyChecking=accept-new -r dist/* philmong@100.95.147.38:/home/philmong/apps/agent-canvas/
 
     - name: 백엔드 서버 업로드
-      shell: pwsh
+      shell: powershell
       run: |
         scp -o StrictHostKeyChecking=accept-new server/index.ts server/db.ts philmong@100.95.147.38:/home/philmong/apps/agent-canvas-api/server/
         scp -o StrictHostKeyChecking=accept-new package.json package-lock.json philmong@100.95.147.38:/home/philmong/apps/agent-canvas-api/
 
     - name: 백엔드 의존성 설치 및 재시작
-      shell: pwsh
+      shell: powershell
       run: |
         ssh -o StrictHostKeyChecking=accept-new philmong@100.95.147.38 "cd /home/philmong/apps/agent-canvas-api && npm install --omit=dev --omit=optional && npm install tsx && pm2 restart agent-canvas-api"
 
     - name: 완료
-      shell: pwsh
+      shell: powershell
       run: Write-Host "✅ https://philmong.co.kr/canvas/ 로 배포되었습니다."
