@@ -10,16 +10,26 @@ const LIST_KEY = 'aura-map-project-list';
 // 디바운스 타이머 (백엔드 과부하 방지)
 let syncTimer = null;
 
+// 안전한 JSON 파서 (undefined 좀비 방패막)
+const safeJsonParse = (value) => {
+  if (!value || value === 'undefined') return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
 // 프로젝트 목록 불러오기
 const getProjectList = () => {
   const list = localStorage.getItem(LIST_KEY);
-  return list ? JSON.parse(list) : [];
+  return safeJsonParse(list) || [];
 };
 
 // 특정 프로젝트 데이터 불러오기
 const loadProjectData = (id) => {
   const data = localStorage.getItem(`${STORAGE_KEY}-${id}`);
-  return data ? JSON.parse(data) : null;
+  return safeJsonParse(data);
 };
 
 const initialList = getProjectList();
@@ -38,13 +48,14 @@ if (initialList.length === 0) {
 }
 
 const lastProject = loadProjectData(lastProjectId);
+const initialProjectInfo = initialList.find(p => p.id === lastProjectId);
 
 const useStore = create((set, get) => ({
   isLoading: false,
   nodes: [],
   edges: [],
   currentProjectId: lastProjectId || 'default',
-  currentProjectName: '연결 중...',
+  currentProjectName: initialProjectInfo?.name || '새 프로젝트',
   projectList: initialList,
   
   // [v4.6-PLATINUM] 상세 창 관리 상태
@@ -168,6 +179,9 @@ const useStore = create((set, get) => ({
     try {
       const { nodes, edges, currentProjectId, projectList, syncToBackend } = get();
       if (!currentProjectId) return;
+
+      const lastModified = new Date().toISOString();
+      const projectInfo = projectList.find(p => p.id === currentProjectId);
 
       // 1. 개별 프로젝트 데이터 저장 (로컬 캐시 부활 - 오프라인 가용성 및 깜빡임 방지)
       const projectData = JSON.stringify({
@@ -431,7 +445,7 @@ const useStore = create((set, get) => ({
         id: 'root-1',
         type: 'tactical',
         position: { x: 250, y: 250 },
-        data: { label: '🚀 작전 시작', shape: 'terminal' }
+        data: { label: '🚀 시작', shape: 'terminal' }
       }
     ];
 
@@ -458,20 +472,37 @@ const useStore = create((set, get) => ({
     get().saveToStorage(true); // true를 전달하여 즉시 동기화 유도
   },
 
-  // 프로젝트 불러오기
+  // 프로젝트 불러오기 (자가 치유 수리 사양)
   loadProject: (id) => {
-    const data = loadProjectData(id);
+    let data = loadProjectData(id);
     const list = getProjectList();
     const projectInfo = list.find(p => p.id === id);
-    if (data) {
-      set({
-        nodes: data.nodes,
-        edges: data.edges,
-        currentProjectId: id,
-        currentProjectName: projectInfo?.name || '알 수 없는 작전'
-      });
-      localStorage.setItem('aura-map-last-project-id', id);
+    
+    // 🛡️ [Self-Healing] 만약 실물 데이터가 유실되어 없다면 기본 노드로 긴급 자동 복구!
+    if (!data) {
+      console.warn(`⚠️ [Self-Healing] 프로젝트(${id}) 실물 데이터 유실 감지! 기본 전술 거점으로 긴급 자가 치유를 시작합니다.`);
+      data = {
+        nodes: [
+          {
+            id: 'root-1',
+            type: 'tactical',
+            position: { x: 250, y: 250 },
+            data: { label: '🚀 시작', shape: 'terminal' }
+          }
+        ],
+        edges: []
+      };
+      // 로컬 캐시에 긴급 적재
+      localStorage.setItem(`${STORAGE_KEY}-${id}`, JSON.stringify(data));
     }
+
+    set({
+      nodes: data.nodes || [],
+      edges: data.edges || [],
+      currentProjectId: id,
+      currentProjectName: projectInfo?.name || '알 수 없는 프로젝트'
+    });
+    localStorage.setItem('aura-map-last-project-id', id);
   },
 
   // 프로젝트 삭제 (로컬 + 백엔드 동시 삭제)
@@ -503,7 +534,7 @@ const useStore = create((set, get) => ({
     // 잠금 상태 확인
     const project = projectList.find(p => p.id === id);
     if (project?.isLocked) {
-      alert('🔒 이 작전은 잠겨 있어 이름을 변경할 수 없습니다.');
+      alert('🔒 이 프로젝트는 잠겨 있어 이름을 변경할 수 없습니다.');
       return;
     }
 
@@ -638,7 +669,7 @@ const useStore = create((set, get) => ({
   },
   
   // 노드 추가
-  addNode: (position, label = '새 전술 거점', shape = 'process', type = 'tactical') => {
+  addNode: (position, label = '새 노드', shape = 'process', type = 'tactical') => {
     const { currentProjectId, projectList } = get();
     const project = projectList.find(p => p.id === currentProjectId);
     if (project?.isLocked) return;
@@ -743,7 +774,7 @@ const useStore = create((set, get) => ({
     const groupNode = {
       id: groupId, type: 'auraGroup', position: { x: minX - padding, y: minY - padding },
       style: { width: (maxX - minX) + padding * 2, height: (maxY - minY) + padding * 2 },
-      data: { label: '새 전술 구역' }, zIndex: -1,
+      data: { label: '새 그룹' }, zIndex: -1,
     };
     const updatedNodes = get().nodes.map(node => {
       const isSelected = selectedNodes.find(sn => sn.id === node.id);
@@ -762,7 +793,7 @@ const useStore = create((set, get) => ({
     if (!data || !data.nodes) return;
 
     const newProjectId = `import-${Date.now()}`;
-    const newProjectName = data.projectName || `이관된 작전_${new Date().toLocaleTimeString()}`;
+    const newProjectName = data.projectName || `가져온 프로젝트_${new Date().toLocaleTimeString()}`;
 
     // 1 & 2. 데이터 보정 및 최적화 (엔진 이관 완료)
     const migratedNodes = migrateNodes(data.nodes);
@@ -796,7 +827,7 @@ const useStore = create((set, get) => ({
 
   // 전체 초기화
   clearAll: () => {
-    if (confirm('모든 작전 데이터를 초기화하시겠습니까?')) {
+    if (confirm('모든 데이터를 초기화하시겠습니까?')) {
       set({ nodes: [], edges: [] });
       localStorage.removeItem(STORAGE_KEY);
     }

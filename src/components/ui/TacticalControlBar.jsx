@@ -43,7 +43,7 @@ const TacticalControlBar = ({ isToolboxOpen, onOpenDetail }) => {
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
     const position = screenToFlowPosition({ x: centerX, y: centerY });
-    addNode(position, '새 전술 거점', 'process');
+    addNode(position, '새 노드', 'process');
   };
 
   const handleCreateGroup = () => {
@@ -51,7 +51,7 @@ const TacticalControlBar = ({ isToolboxOpen, onOpenDetail }) => {
     if (selectedNodes.length > 0) {
       createGroup(selectedNodes);
     } else {
-      alert('편성할 노드들을 먼저 선택해 주세요! (Shift + 드래그)');
+      alert('그룹으로 묶을 노드들을 먼저 선택해 주세요! (Shift + 드래그)');
     }
   };
 
@@ -108,7 +108,7 @@ const TacticalControlBar = ({ isToolboxOpen, onOpenDetail }) => {
         try {
           const data = JSON.parse(evt.target.result);
           loadFromData(data);
-          alert('작전 지도를 성공적으로 복구했습니다!');
+          alert('파일을 성공적으로 불러왔습니다!');
         } catch (err) {
           alert('잘못된 파일 형식입니다.');
         }
@@ -222,9 +222,9 @@ const TacticalControlBar = ({ isToolboxOpen, onOpenDetail }) => {
             opacity: isLocked ? 0.5 : 1,
             cursor: isLocked ? 'not-allowed' : 'pointer'
           }}
-          title={isLocked ? "잠금 모드에서는 편성할 수 없습니다" : "부대 편성"}
+          title={isLocked ? "잠금 모드에서는 그룹으로 묶을 수 없습니다" : "그룹 묶기"}
         >
-          <Users size={20} /> <span className="btn-text">부대 편성</span>
+          <Users size={20} /> <span className="btn-text">그룹 묶기</span>
         </button>
         <button 
           onClick={onOpenDetail}
@@ -237,7 +237,7 @@ const TacticalControlBar = ({ isToolboxOpen, onOpenDetail }) => {
             opacity: selectedNodeCount > 0 ? 1 : 0.5,
             cursor: selectedNodeCount > 0 ? 'pointer' : 'not-allowed'
           }}
-          title="전술 상세 편집"
+          title="상세 편집"
         >
           <Plus size={20} style={{ transform: 'rotate(45deg)' }} /> <span className="btn-text">상세 계획</span>
         </button>
@@ -271,7 +271,7 @@ const TacticalControlBar = ({ isToolboxOpen, onOpenDetail }) => {
             opacity: (past.length > 0 && !isLocked) ? 1 : 0.5,
             cursor: (past.length > 0 && !isLocked) ? 'pointer' : 'not-allowed'
           }}
-          title="작전 취소 (Ctrl+Z)"
+          title="실행 취소 (Ctrl+Z)"
         >
           <Undo2 size={18} />
         </button>
@@ -286,7 +286,7 @@ const TacticalControlBar = ({ isToolboxOpen, onOpenDetail }) => {
             opacity: (future.length > 0 && !isLocked) ? 1 : 0.5,
             cursor: (future.length > 0 && !isLocked) ? 'pointer' : 'not-allowed'
           }}
-          title="작전 재개 (Ctrl+Y)"
+          title="다시 실행 (Ctrl+Y)"
         >
           <Redo2 size={18} />
         </button>

@@ -9,7 +9,7 @@ const MarkdownEditor = ({ content, onChange, readOnly = false }) => {
     extensions: [
       StarterKit,
       Placeholder.configure({
-        placeholder: '이곳에 상세 전술 계획을 입력하세요... (마크다운 단축키 지원: # 제목, * 목록, > 인용 등)',
+        placeholder: '이곳에 상세 내용을 입력하세요... (마크다운 단축키 지원: # 제목, * 목록, > 인용 등)',
       }),
     ],
     content: content || '',

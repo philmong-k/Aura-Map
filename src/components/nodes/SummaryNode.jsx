@@ -210,7 +210,7 @@ const SummaryNode = ({ id, data, selected }) => {
 
           {summaryData.groups.length === 0 && summaryData.ungrouped.nodes.length === 0 && (
             <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '40px 0' }}>
-              집계할 작전 데이터가 없습니다.
+              집계할 데이터가 없습니다.
             </div>
           )}
         </div>

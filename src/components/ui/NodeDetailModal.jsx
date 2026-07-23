@@ -51,8 +51,8 @@ const NodeDetailModal = () => {
 
   const handleCopyText = () => {
     const plainText = memo.replace(/<[^>]*>/g, '');
-    navigator.clipboard.writeText(`[전술 거점: ${label}]\n--------------------------\n${plainText}`);
-    alert('전술 내용이 클립보드에 복사되었습니다.');
+    navigator.clipboard.writeText(`[노드: ${label}]\n--------------------------\n${plainText}`);
+    alert('내용이 클립보드에 복사되었습니다.');
   };
 
   // 🖼️ 이미지 업로드 핸들러 (지능형 압축 적용)
@@ -93,7 +93,7 @@ const NodeDetailModal = () => {
   };
 
   const removeGalleryImage = (index) => {
-    if (confirm('이 전술 이미지를 삭제하시겠습니까?')) {
+    if (confirm('이 이미지를 삭제하시겠습니까?')) {
       setGallery(prev => prev.filter((_, i) => i !== index));
     }
   };
@@ -267,12 +267,12 @@ const NodeDetailModal = () => {
                   flexDirection: 'column'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8' }}>전술 메모</span>
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8' }}>메모</span>
                   </div>
-                  <textarea 
+                  <textarea
                     value={memo}
                     onChange={(e) => setMemo(e.target.value)}
-                    placeholder="전술 지시 사항을 입력하십시오..."
+                    placeholder="메모를 입력하세요..."
                     style={{
                       flex: 1,
                       background: 'rgba(15, 23, 42, 0.6)',
@@ -300,7 +300,7 @@ const NodeDetailModal = () => {
                   flexDirection: 'column'
                 }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: '800', color: '#00e5ff' }}>전술 데이터 장부</span>
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: '#00e5ff' }}>데이터 장부</span>
                   </div>
                   <div style={{ flex: 1, overflow: 'hidden', borderRadius: '8px', border: '1px solid rgba(0, 229, 255, 0.2)' }}>
                     <TacticalSheet nodeId={node.id} isLocked={false} />
@@ -330,7 +330,7 @@ const NodeDetailModal = () => {
           </div>
           
           <button onClick={handleSave} className="footer-button primary">
-            <Save size={16} /> 작전 저장 및 닫기
+            <Save size={16} /> 저장 및 닫기
           </button>
         </div>
 

@@ -3,7 +3,7 @@ import { Home, Library, Wrench } from 'lucide-react';
 import useStore from '../../store/useStore';
 import './UIControls.css';
 
-const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToolboxOpen }) => {
+const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToolboxOpen, isMobile }) => {
   const currentProjectId = useStore((state) => state.currentProjectId);
   const currentProjectName = useStore((state) => state.currentProjectName);
   const renameProject = useStore((state) => state.renameProject);
@@ -14,8 +14,6 @@ const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToo
     renameProject(currentProjectId, tempName);
     setIsRenaming(false);
   };
-
-  const isMobile = window.innerWidth <= 768;
 
   return (
     <div className="top-nav-bar" style={{ padding: isMobile ? '0 10px' : '0 20px' }}>
@@ -60,7 +58,7 @@ const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToo
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              maxWidth: isMobile ? '80px' : 'none'
+              maxWidth: isMobile ? '140px' : '260px'
             }}
           >
             {currentProjectName}
@@ -94,24 +92,6 @@ const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToo
           </span>
         </div>
 
-        {/* 🏆 v4.7.0-PLATINUM 버전 배지 */}
-        <div style={{
-          padding: '2px 8px',
-          background: 'linear-gradient(135deg, rgba(0, 229, 255, 0.2) 0%, rgba(0, 150, 255, 0.2) 100%)',
-          border: '1px solid #00e5ff',
-          borderRadius: '4px',
-          boxShadow: '0 0 15px rgba(0, 229, 255, 0.3)'
-        }}>
-          <span style={{
-            color: '#00e5ff',
-            fontSize: '10px',
-            fontWeight: '900',
-            letterSpacing: '0.5px'
-          }}>
-            v4.7.0-PLATINUM
-          </span>
-        </div>
-
         {/* [v4.6-PLATINUM] 스토리지 용량 모니터링 (모바일에서는 숨김) */}
         {!isMobile && (
           <div style={{
@@ -142,7 +122,7 @@ const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToo
         <button 
           onClick={() => setShowLibrary(!showLibrary)}
           style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}
-          title="작전 저장소 열기"
+          title="프로젝트 저장소 열기"
         >
           <Library size={18} />
         </button>
@@ -160,7 +140,7 @@ const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToo
         {/* 🚪 로그아웃 버튼 (v4.7.0) */}
         <button 
           onClick={() => {
-            if (confirm('작전 구역에서 퇴장하시겠습니까?')) {
+            if (confirm('로그아웃 하시겠습니까?')) {
               localStorage.removeItem('aura_token');
               localStorage.removeItem('aura_user_role');
               window.location.reload();
@@ -180,7 +160,7 @@ const TopNavigationBar = ({ showLibrary, setShowLibrary, isToolboxOpen, setIsToo
             gap: '5px',
             transition: 'all 0.2s'
           }}
-          title="안전하게 퇴장"
+          title="로그아웃"
         >
           LOGOUT
         </button>

@@ -82,7 +82,7 @@ const AuraGroup = ({ id, data, selected }) => {
 
   const handleUngroup = (e) => {
     e.stopPropagation();
-    if (confirm('이 구역의 부대 편성을 해제하시겠습니까? (부대원들은 유지됩니다)')) {
+    if (confirm('이 그룹을 해제하시겠습니까? (하위 노드는 유지됩니다)')) {
       ungroup(id);
     }
   };
@@ -203,7 +203,7 @@ const AuraGroup = ({ id, data, selected }) => {
           {/* 그룹 해제 버튼 */}
           <button 
             onClick={handleUngroup}
-            title="편성 해제 (Ungroup)"
+            title="그룹 해제 (Ungroup)"
             style={{
               background: 'rgba(244, 63, 94, 0.1)',
               border: '1px solid rgba(244, 63, 94, 0.2)',
@@ -266,7 +266,7 @@ const AuraGroup = ({ id, data, selected }) => {
         }}
       >
         <textarea 
-          placeholder="작전 지침 입력..."
+          placeholder="설명 입력..."
           value={memo}
           onChange={handleMemoChange}
           style={{

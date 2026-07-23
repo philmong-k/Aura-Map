@@ -172,14 +172,14 @@ const FlowCanvas = () => {
     }
     if (e.detail === 2) { 
       const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
-      addNode(position, '새 전술 거점', 'process');
+      addNode(position, '새 노드', 'process');
     }
   }, [screenToFlowPosition, addNode, multiSelectMode]);
 
   const onPaneContextMenu = useCallback((e) => {
     e.preventDefault();
     const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
-    addNode(position, '전술 명령', 'process');
+    addNode(position, '새 노드', 'process');
   }, [screenToFlowPosition, addNode]);
 
   const currentProject = projectList.find(p => p.id === currentProjectId);
@@ -194,11 +194,12 @@ const FlowCanvas = () => {
     <div ref={reactFlowWrapper} style={{ width: '100vw', height: '100vh', background: '#030712', position: 'relative', overflow: 'hidden' }}>
       
       {/* 1. 상단 네비게이션 바 */}
-      <TopNavigationBar 
-        showLibrary={showLibrary} 
+      <TopNavigationBar
+        showLibrary={showLibrary}
         setShowLibrary={setShowLibrary}
         isToolboxOpen={isToolboxOpen}
         setIsToolboxOpen={setIsToolboxOpen}
+        isMobile={isMobile}
       />
 
       {/* 2. 전술 아카이브 (도서관) */}
@@ -323,7 +324,7 @@ const FlowCanvas = () => {
             <h1 style={{ fontSize: '3rem', margin: 0, filter: 'drop-shadow(0 0 20px #00e5ff)', color: '#00e5ff', fontFamily: 'Outfit, sans-serif' }}>Agent Canvas</h1>
             <div style={{ marginTop: '10px' }}>
               <p style={{ fontSize: '1.4rem', fontWeight: '700', color: '#e2e8f0', margin: '0 0 10px 0' }}>
-                지휘관님, 다시 캔버스로 오신 것을 환영합니다.
+                다시 캔버스로 오신 것을 환영합니다.
               </p>
               <p style={{ fontSize: '1rem', color: '#94a3b8', lineHeight: '1.6', margin: 0 }}>
                 현재 활성화된 프로젝트가 없습니다.<br/>
@@ -358,7 +359,7 @@ const FlowCanvas = () => {
               새 프로젝트 시작하기
             </button>
             <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '5px' }}>
-              TIP: 좌측 상단 도서관 아이콘을 클릭하여 작전 목록을 확인하세요.
+              TIP: 좌측 상단 도서관 아이콘을 클릭하여 프로젝트 목록을 확인하세요.
             </p>
           </div>
         </div>

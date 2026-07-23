@@ -44,29 +44,29 @@ const LoginOverlay = ({ onLoginSuccess }) => {
       <div className="login-card">
         <div className="login-header">
           <div className="aura-logo">AURA</div>
-          <h1>Tactical Access Portal</h1>
-          <p>지휘관 신분을 증명하십시오.</p>
+          <h1>로그인</h1>
+          <p>로그인 정보를 입력해 주세요.</p>
         </div>
-        
+
         <form onSubmit={handleAuthenticate} className="login-form">
           <div className="input-group">
-            <label>AGENT ID</label>
-            <input 
-              type="text" 
-              value={agentId} 
+            <label>아이디</label>
+            <input
+              type="text"
+              value={agentId}
               onChange={(e) => setAgentId(e.target.value)}
-              placeholder="전술 ID 입력..."
+              placeholder="아이디 입력..."
               required
             />
           </div>
-          
+
           <div className="input-group">
-            <label>ACCESS KEY</label>
-            <input 
-              type="password" 
-              value={accessKey} 
+            <label>비밀번호</label>
+            <input
+              type="password"
+              value={accessKey}
               onChange={(e) => setAccessKey(e.target.value)}
-              placeholder="보안 키 입력..."
+              placeholder="비밀번호 입력..."
               required
             />
           </div>
@@ -74,14 +74,9 @@ const LoginOverlay = ({ onLoginSuccess }) => {
           {error && <div className="login-error">{error}</div>}
 
           <button type="submit" className="auth-button" disabled={isLoading}>
-            {isLoading ? 'AUTHENTICATING...' : 'AUTHENTICATE'}
+            {isLoading ? '로그인 중...' : '로그인'}
           </button>
         </form>
-
-        <div className="login-footer">
-          <span>ANTIGRAVITY PROTOCOL ACTIVATED</span>
-          <div className="pulse-dot"></div>
-        </div>
       </div>
     </div>
   );

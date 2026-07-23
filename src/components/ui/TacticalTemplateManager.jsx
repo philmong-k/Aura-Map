@@ -41,7 +41,7 @@ const TacticalTemplateManager = ({ isOpen, onClose }) => {
         <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Database size={20} style={{ color: '#00e5ff' }} />
-            <h2 style={{ margin: 0, fontSize: '18px', color: '#fff', fontWeight: '800' }}>전술 데이터 템플릿 관리</h2>
+            <h2 style={{ margin: 0, fontSize: '18px', color: '#fff', fontWeight: '800' }}>데이터 템플릿 관리</h2>
           </div>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={24} /></button>
         </div>
@@ -85,7 +85,7 @@ const TacticalTemplateManager = ({ isOpen, onClose }) => {
         </div>
 
         <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: '#475569', fontSize: '11px' }}>
-          지능형 팁: 여기서 정의된 템플릿은 모든 노드의 '전술 시트' 설정에서 즉시 호출할 수 있습니다.
+          팁: 여기서 정의된 템플릿은 모든 노드의 '데이터 시트' 설정에서 즉시 호출할 수 있습니다.
         </div>
       </motion.div>
     </div>

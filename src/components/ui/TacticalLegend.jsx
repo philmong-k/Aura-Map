@@ -5,11 +5,11 @@ const TacticalLegend = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const legendItems = [
-    { name: '터미널', desc: '작전의 시작과 끝을 정의' },
+    { name: '터미널', desc: '흐름의 시작과 끝을 정의' },
     { name: '프로세스', desc: '일반적인 작업, 실행 또는 동작' },
     { name: '판단', desc: '조건에 따른 분기 (Yes/No)' },
     { name: '입출력', desc: '데이터의 입력 또는 결과 출력' },
-    { name: '서브루틴', desc: '정의된 별도 절차나 작전 묶음' },
+    { name: '서브루틴', desc: '정의된 별도 절차나 작업 묶음' },
     { name: '데이터베이스', desc: '정보의 저장 또는 조회소' },
   ];
 
@@ -43,7 +43,7 @@ const TacticalLegend = () => {
         }}
       >
         <HelpCircle size={18} />
-        <span style={{ fontSize: '13px', fontWeight: '700' }}>전술 가이드</span>
+        <span style={{ fontSize: '13px', fontWeight: '700' }}>사용 가이드</span>
         {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
       </div>
 

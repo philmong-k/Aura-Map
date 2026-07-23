@@ -40,7 +40,7 @@ const ProjectLibrarySidebar = ({ showLibrary, setShowLibrary }) => {
 
   const handleRename = (e, id, currentName) => {
     e.stopPropagation();
-    const newName = prompt('작전 계획의 새로운 이름을 입력하세요:', currentName);
+    const newName = prompt('프로젝트의 새로운 이름을 입력하세요:', currentName);
     if (newName && newName !== currentName) {
       renameProject(id, newName);
     }
@@ -58,9 +58,9 @@ const ProjectLibrarySidebar = ({ showLibrary, setShowLibrary }) => {
       position: 'absolute',
       top: 0,
       left: 0,
-      width: '320px',
+      width: 'min(320px, 100vw)',
       height: '100%',
-      zIndex: 200,
+      zIndex: 1500,
       background: 'rgba(15, 23, 42, 0.95)',
       backdropFilter: 'blur(20px)',
       borderRight: '1px solid rgba(255,255,255,0.1)',
@@ -72,7 +72,7 @@ const ProjectLibrarySidebar = ({ showLibrary, setShowLibrary }) => {
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Library size={22} color="#00e5ff" /> 작전 저장소
+          <Library size={22} color="#00e5ff" /> 프로젝트 저장소
         </h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {isBackendLinked && (
@@ -172,13 +172,13 @@ const ProjectLibrarySidebar = ({ showLibrary, setShowLibrary }) => {
         onClick={() => setIsTemplateManagerOpen(true)}
         style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(0, 229, 255, 0.1)', color: '#00e5ff', border: '1px solid rgba(0, 229, 255, 0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '700' }}
       >
-        <Layers size={18} /> 전술 데이터 템플릿 관리
+        <Layers size={18} /> 데이터 템플릿 관리
       </button>
 
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
         {filteredList.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#64748b', padding: '40px 20px', fontSize: '13px' }}>
-            해당하는 작전 계획이 없습니다.
+            해당하는 프로젝트가 없습니다.
           </div>
         ) : filteredList.map(proj => (
           <div 
@@ -214,7 +214,7 @@ const ProjectLibrarySidebar = ({ showLibrary, setShowLibrary }) => {
                   {proj.name}
                 </span>
                 {proj.isLocked ? (
-                  <span title="잠긴 작전" style={{ color: '#fbbf24', display: 'flex', alignItems: 'center' }}>
+                  <span title="잠긴 프로젝트" style={{ color: '#fbbf24', display: 'flex', alignItems: 'center' }}>
                     <Lock size={12} />
                   </span>
                 ) : (
@@ -248,15 +248,15 @@ const ProjectLibrarySidebar = ({ showLibrary, setShowLibrary }) => {
                 <button 
                   onClick={(e) => { e.stopPropagation(); toggleProjectLock(proj.id); }}
                   style={{ background: 'transparent', border: 'none', color: proj.isLocked ? '#fbbf24' : '#64748b', cursor: 'pointer', padding: '0' }}
-                  title={proj.isLocked ? "잠금 해제" : "작전 잠금"}
+                  title={proj.isLocked ? "잠금 해제" : "프로젝트 잠금"}
                 >
                   {proj.isLocked ? <Lock size={16} /> : <LockKeyholeOpen size={16} />} 
                 </button>
                 {!proj.isLocked && (
                   <button 
-                    onClick={(e) => { e.stopPropagation(); if(confirm('이 작전 계획을 영구 삭제하시겠습니까?')) deleteProject(proj.id); }}
+                    onClick={(e) => { e.stopPropagation(); if(confirm('이 프로젝트를 영구 삭제하시겠습니까?')) deleteProject(proj.id); }}
                     style={{ background: 'transparent', border: 'none', color: '#f43f5e', cursor: 'pointer', padding: '0' }}
-                    title="작전 삭제"
+                    title="프로젝트 삭제"
                   >
                     <Trash2 size={16} />
                   </button>

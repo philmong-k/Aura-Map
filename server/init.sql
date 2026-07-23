@@ -1,31 +1,43 @@
--- MariaDB 전술 데이터 저장용 테이블 생성 스크립트 (폴더 체계 v3)
-CREATE DATABASE IF NOT EXISTS `horizon-db`;
-USE `horizon-db`;
+-- Agent Canvas 전용 스키마 (Supabase/Postgres). 기존 상품/주문 등 비즈니스 테이블과 완전히 분리됨.
+CREATE SCHEMA IF NOT EXISTS agent_canvas;
 
--- 낡은 테이블이 있다면 제거하여 충돌 방지
-DROP TABLE IF EXISTS `tactical_maps`;
-
-CREATE TABLE `tactical_maps` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` VARCHAR(100) DEFAULT 'guest',
-  `folder_name` VARCHAR(100) DEFAULT 'Unclassified', -- 폴더(카테고리) 필드 추가
-  `title` VARCHAR(255) DEFAULT 'Untitled Tactical Map',
-  `data` LONGTEXT NOT NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX (`user_id`),
-  INDEX (`folder_name`)
+DROP TABLE IF EXISTS agent_canvas.tactical_maps;
+CREATE TABLE agent_canvas.tactical_maps (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(100) DEFAULT 'guest',
+  folder_name VARCHAR(100) DEFAULT 'Unclassified',
+  title VARCHAR(255) DEFAULT 'Untitled Tactical Map',
+  visibility VARCHAR(20) DEFAULT 'PRIVATE',
+  data TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 👥 사용자 계정 테이블 (ID/PW 체계)
-CREATE TABLE IF NOT EXISTS `users` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `username` VARCHAR(50) UNIQUE NOT NULL,
-  `password_hash` VARCHAR(255) NOT NULL,
-  `role` VARCHAR(20) DEFAULT 'Operator',
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE INDEX idx_tactical_maps_user_id ON agent_canvas.tactical_maps (user_id);
+CREATE INDEX idx_tactical_maps_folder_name ON agent_canvas.tactical_maps (folder_name);
+
+-- Postgres에는 MySQL의 "ON UPDATE CURRENT_TIMESTAMP"가 없어 트리거로 대체
+CREATE OR REPLACE FUNCTION agent_canvas.set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_tactical_maps_updated_at
+BEFORE UPDATE ON agent_canvas.tactical_maps
+FOR EACH ROW EXECUTE FUNCTION agent_canvas.set_updated_at();
+
+-- 👥 사용자 계정 테이블 (server/index.ts의 /api/auth/login이 실제로 조회하는 형태)
+CREATE TABLE IF NOT EXISTS agent_canvas.users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  name VARCHAR(100),
+  role VARCHAR(20) DEFAULT 'Operator',
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 초기 관리자 계정 생성 (패스워드 간소화: commander)
-INSERT INTO `users` (username, password_hash, role) VALUES ('commander', 'commander', 'admin') 
-ON DUPLICATE KEY UPDATE password_hash='commander';
+-- 지휘관 마스터키 로그인은 DB를 조회하지 않고 코드(authMiddleware)에 하드코딩되어 있으므로
+-- 여기서는 시드 데이터를 넣지 않음. 정식 계정이 필요해지면 bcrypt 해시로 직접 추가할 것.

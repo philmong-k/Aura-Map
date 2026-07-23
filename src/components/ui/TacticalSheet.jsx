@@ -77,7 +77,7 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
   };
 
   const saveLayoutTemplate = () => {
-    const templateName = prompt('저장할 전술 레이아웃의 이름을 입력하세요:', '표준 장부 레이아웃');
+    const templateName = prompt('저장할 레이아웃의 이름을 입력하세요:', '표준 장부 레이아웃');
     if (!templateName) return;
     
     const newTemplate = {
@@ -89,7 +89,7 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
     const updated = [...layoutTemplates, newTemplate];
     setLayoutTemplates(updated);
     localStorage.setItem('aura-map-layout-templates', JSON.stringify(updated));
-    alert('전술 레이아웃이 금고에 저장되었습니다.');
+    alert('레이아웃이 저장되었습니다.');
   };
 
   const applyLayoutTemplate = (template) => {
@@ -177,7 +177,7 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
     
     // 파일 타입 검증
     if (!file.type.startsWith('image/')) {
-      alert('이미지 파일만 전술 자료로 등록할 수 있습니다.');
+      alert('이미지 파일만 등록할 수 있습니다.');
       return;
     }
 
@@ -186,7 +186,7 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
     // 업로드 시작 시 콘솔 브리핑
     console.log(`📡 [Tactical Engine] 이미지 분석 시작: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
     
-    reader.onerror = () => alert('파일을 읽는 중 전술적 오류가 발생했습니다.');
+    reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
     
     reader.onload = (event) => {
       const img = new Image();
@@ -581,7 +581,7 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '14px', fontWeight: '700', color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Calculator size={16} /> 전술 수식 설계: {data.columns.find(c => c.id === activeFormulaCol)?.name}
+              <Calculator size={16} /> 수식 설계: {data.columns.find(c => c.id === activeFormulaCol)?.name}
             </span>
             <button onClick={() => setActiveFormulaCol(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <X size={18} />
@@ -612,7 +612,7 @@ const TacticalSheet = ({ nodeId, isLocked }) => {
             onClick={() => setActiveFormulaCol(null)}
             style={{ marginTop: '10px', padding: '16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '14px', fontWeight: '900', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', cursor: 'pointer', boxShadow: '0 10px 30px rgba(16, 185, 129, 0.3)' }}
           >
-            <Check size={20} /> 전술 수식 적용 완료
+            <Check size={20} /> 수식 적용 완료
           </button>
         </div>
       )}
