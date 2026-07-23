@@ -1,4 +1,4 @@
-name: Aura-Map Tactical Deploy
+name: Agent Canvas Deploy
 
 on:
   push:
@@ -6,11 +6,11 @@ on:
 
 jobs:
   build-and-deploy:
-    # 지휘관님의 로컬 PC 러너를 사용합니다.
+    # 이 컴퓨터의 self-hosted 러너를 사용합니다.
     runs-on: self-hosted
 
     steps:
-    - name: 전술 코드 체크아웃
+    - name: 코드 체크아웃
       uses: actions/checkout@v4
 
     - name: Node.js 환경 구축
@@ -19,16 +19,28 @@ jobs:
         node-version: 20
         cache: 'npm'
 
-    - name: 의존성 보급 (Install)
+    - name: 의존성 설치
       run: npm install
 
-    - name: 전술 엔진 빌드 (Build)
+    - name: 프론트엔드 빌드
       run: npm run build
 
-    - name: WSL2 영토로 배포 (Deploy to Nginx)
-      shell: pwsh
+    - name: 프론트엔드 서버 업로드
+      shell: bash
       run: |
-        # 빌드된 dist 폴더를 WSL2 내부의 Nginx 웹 루트로 복사
-        wsl -d Ubuntu rm -rf /var/www/aura-map/*
-        wsl -d Ubuntu cp -r ./dist/* /var/www/aura-map/
-        echo "✅ Aura-Map이 dev.philmong.co.kr/canvas/ 경로로 배포되었습니다."
+        scp -o StrictHostKeyChecking=accept-new -r dist/* philmong@100.95.147.38:/home/philmong/apps/agent-canvas/
+
+    - name: 백엔드 서버 업로드
+      shell: bash
+      run: |
+        scp -o StrictHostKeyChecking=accept-new server/index.ts server/db.ts philmong@100.95.147.38:/home/philmong/apps/agent-canvas-api/server/
+        scp -o StrictHostKeyChecking=accept-new package.json package-lock.json philmong@100.95.147.38:/home/philmong/apps/agent-canvas-api/
+
+    - name: 백엔드 의존성 설치 및 재시작
+      shell: bash
+      run: |
+        ssh -o StrictHostKeyChecking=accept-new philmong@100.95.147.38 "cd /home/philmong/apps/agent-canvas-api && npm install --omit=dev --omit=optional && npm install tsx && pm2 restart agent-canvas-api"
+
+    - name: 완료
+      shell: bash
+      run: echo "✅ https://philmong.co.kr/canvas/ 로 배포되었습니다."
